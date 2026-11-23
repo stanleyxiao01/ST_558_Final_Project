@@ -1,14 +1,135 @@
 ---
 title: "ST_558_Final_Project"
 author: "Stanley Xiao"
-format: html
+format:
+  html:
+    toc: true
+    theme: cosmo
 editor: visual
 ---
 
+## Introduction
+
+This project uses the Bank Marketing dataset to predict whether a customer subscribes to a term deposit after being contacted during a marketing campaign by a Portuguese banking institution. The response variable, `y`, records subscription status (`yes` or `no`). Customer demographics, financial information, and marketing contact characteristics provide possible predictors. 
+
+The data were used in ST 558 Project 2 and originate from the [Kaggle Banking Dataset (Marketing Targets)](https://www.kaggle.com/datasets/prakharrathi25/banking-dataset-marketing-targets), based on the [UCI Bank Marketing dataset](https://archive.ics.uci.edu/dataset/222/bank+marketing). The original training and testing files from Kaggle were combined and duplicate rows removed in Project 2. **A new training/test split will be created for this final project**; the original Kaggle split is not used for model evaluation.
+
+Our goal is to compare a classification tree and a random forest using the `tidymodels` framework, select the better-performing model on a held-out test set, and make predictions available through an API.
+
+## Data Loading & Preprocessing
+
 ```{r}
 library(tidyverse)
-bank_data <- read_csv("Dataset/bank_clean.csv")
-dim(bank_data)
-names(bank_data)
+library(knitr)
+
+# Read the cleaned dataset created for Project 2
+bank_data <- read_csv("Dataset/bank_clean.csv", show_col_types = FALSE)
+
+# Convert categorical columns (including the response) to facotrs)
+categorical_vars <- c(
+  "job", "marital", "education", "default", "housing", "loan",
+  "contact", "month", "poutcome", "y"
+)
+
+bank_data <- bank_data |>
+  mutate(across(all_of(categorical_vars), as.factor))
+
+# Put `yes` first so later classification metrics can treat it as the event
+bank_data <- bank_data |>
+  mutate(y = factor(y, levels = c("yes", "no")))
+```
+
+The cleaned dataset contains `r nrow(bank_data)` observations and `r ncol(bank_data)` variables. Numeric variables include customer age, account balance, and campaign contact measures; categorical variables include job, education, housing loan status, and the response.
+
+### Dataset dimensions and variable types
+
+```{r}
+#| label: variable-types
+
+tibble(
+  Variable = names(bank_data),
+  Type = vapply(bank_data, function(x) class(x)[1], character(1))
+) |>
+  kable(caption = "Variables and their data types")
+```
+
+### Missing values and duplicates
+
+```{r}
+#| label: data-quality
+
+missing_summary <- tibble(
+  Variable = names(bank_data),
+  Missing = vapply(bank_data, function(x) sum(is.na(x)), integer(1))
+)
+
+missing_summary |>
+  kable(caption = "Missing values by variable")
+
+sum(duplicated(bank_data))
+```
+
+The value `unknown` appears in some categorical variables and is retained as a category rather than automatically treated as missing. The duplicate count above verifies whether any identical records remain in the cleaned dataset.
+
+## Exploratory Analaysis of the Response
+
+### Term deposit subscription frequencies
+
+```{r}
+#| label: response-distribution
+
+subscription_summary <- bank_data |>
+  count(y, name = "Frequency") |>
+  mutate(Percentage = round(100 * Frequency / sum(Frequency), 2))
+
+subscription_summary |>
+  kable(caption = "Term deposit subscription frequencies")
+```
+
+```{r}
+#| label: response-plot
+
+subscription_summary |>
+  ggplot(aes(x = y, y = Frequency, fill = y)) + 
+  geom_col(show.legend = FALSE) +
+  geom_text(
+    aes(label = paste0(Frequency, " (", Percentage, "%)")),
+    vjust = -0.5,
+    size = 4
+  ) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.12))
+  ) +
+  labs(
+    title = "Term Deposit Subscription Outcomes",
+    x = "Subscribed to a term deposit?",
+    y = "Number of customers"
+  ) +
+  theme_minimal()
+```
+
+The subscription distribution helps us understand the relative frequency of `yes` and `no` outcomes. This is important when selecting an appropriate performance metric for the classifcation models in later sections.
+
+## Next Steps
+
+In the next stage, we will create a reproducible 70% training / 30% testing split and five-fold cross-validation folds. We will then specify and tune a classification tree and a random forest, compare their test-set performance, and refit the selected model to the full dataset for the API.
+
+
+```{r}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```
 
