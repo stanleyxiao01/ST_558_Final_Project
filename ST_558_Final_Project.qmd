@@ -21,6 +21,7 @@ Our goal is to compare a classification tree and a random forest using the `tidy
 ```{r}
 library(tidyverse)
 library(knitr)
+library(tidymodels)
 
 # Read the cleaned dataset created for Project 2
 bank_data <- read_csv("Dataset/bank_clean.csv", show_col_types = FALSE)
@@ -171,7 +172,7 @@ Both models will use the same predictors. The recipe accounts for previously uns
 
 bank_recipe <- recipe(y ~. , data = bank_train) |>
   step_novel(all_nominal_predictors()) |>
-  step_zv(all_predictors_allpredictors())
+  step_zv(all_predictors())
 
 bank_recipe
 ```
@@ -179,6 +180,94 @@ bank_recipe
 ## Next Steps
 
 Next, we will define a clasification tree, construct a custom hyperparameter grid, tune it using these five cross-validation folds, and select the best settings using an appropriate classification metric.
+
+## Classification Tree Model
+
+### Model specification and tuning grid
+
+A classification tree predicts term deposit subscription by repeatedly splitting customers into groups based on predictor values. We tune three parameters: `cost_complexity` controls pruning, `tree_depth` limits the number of splits along a path, and `min_n` controls the minimum number of observations needed to attempt a split.
+
+```{r}
+#| label: tree-specification
+
+# Classification tree model
+tree_spec <- decision_tree(
+  cost_complexity = tune(),
+  tree_depth = tune(),
+  min_n = tune()
+) |>
+  set_engine("rpart") |>
+  set_mode("classification")
+
+# Workflow with preprocessing recipe
+tree_wf <- workflow() |>
+  add_recipe(bank_recipe) |>
+  add_model(tree_spec)
+
+# Custom grid: 3 x 3 x 3 = 27 combinations
+tree_grid <- grid_regular(
+  cost_complexity(range = c(-4, -1)),
+  tree_depth(range = c(2L, 12L)),
+  min_n(range = c(5L, 30L)),
+  levels = 3
+)
+
+tree_grid
+```
+
+### Five-fold cross-validation
+
+We evaluate the candidate trees with ROC AUC, sensitivity, and specificity. Because `yes` is the first level of `y`, these metrics treat subscription as the event of interest. ROC AUC is the primary selection metric because the response classes are imbalanced.
+
+```{r}
+#| label: tune-classification-tree
+
+set.seed(558)
+
+tree_tune <- tune_grid(
+  tree_wf,
+  resamples = bank_folds,
+  grid = tree_grid,
+  metrics = metric_set(roc_auc, sens, spec)
+)
+
+collect_metrics(tree_tune) |>
+  filter(.metric == "roc_auc") |>
+  arrange(desc(mean)) |>
+  select(cost_complexity, tree_depth, min_n, mean, std_err) |>
+  head(10) |>
+  kable(
+    digits = 4,
+    caption = "Top 10 classifcation trees by cross-validated ROC AUC"
+  )
+```
+
+### Select the best tree
+
+```{r}
+#| label: best-classification-tree
+
+best_tree <- select_best(tree_tune, metric = "roc_auc")
+best_tree
+
+final_tree_wf <- finalize_workflow(tree_wf, best_tree)
+
+# Fit on training data only
+final_tree_fit <- fit(final_tree_wf, data = bank_train)
+
+show_best(tree_tune, metric = "roc_auc", n = 1) |>
+  kable(
+    digits = 4,
+    caption = "Best cross-validated classifcation tree"
+  )
+```
+
+The table above reports the best tree's cross-validated ROC AUC and tuning parameters. A high ROC AUC indications better discrimination between subscribes and non-subscribers across classification thresholds. 
+
+## Next Steps
+
+Next, we will tune a random forest using the same training data and cross-validation folds, then compare both models on the held-out test set.
+
 
 
 
