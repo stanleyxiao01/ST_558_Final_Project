@@ -108,28 +108,94 @@ subscription_summary |>
   theme_minimal()
 ```
 
-The subscription distribution helps us understand the relative frequency of `yes` and `no` outcomes. This is important when selecting an appropriate performance metric for the classifcation models in later sections.
+The subscription distribution helps us understand the relative frequency of `yes` and `no` outcomes. This is important when selecting an appropriate performance metric for the classification models in later sections.
 
 ## Next Steps
 
 In the next stage, we will create a reproducible 70% training / 30% testing split and five-fold cross-validation folds. We will then specify and tune a classification tree and a random forest, compare their test-set performance, and refit the selected model to the full dataset for the API.
 
+## Modeling Setup
+
+### Training and testing split
+
+We use a reproducible 70% training / 30% testing split, stratified by the subscription outcome `y`. Stratification helps maintain similar proportions of subscribes and non-subscribers in both sets. The test set will be reserved for the final comparison of the tuned models.
 
 ```{r}
+#| label: train-test-split
 
+set.seed(558)
 
+bank_split <- initial_split(bank_data, prop = 0.7, strata = y)
+bank_train <- training(bank_split)
+bank_test <- testing(bank_split)
 
-
-
-
-
-
-
-
-
-
-
-
-
+tibble(
+  Dataset = c("Full data", "Training set", "Testing set"),
+  Observations = c(nrow(bank_data), nrow(bank_train), nrow(bank_test))
+) |>
+  kable(caption = "Dataset sizes after the 70/30 split")
 ```
+
+```{r}
+#| label: split-response-balance
+
+bind_rows(
+  bank_train |> count(y) |> mutate(Dataset = "Training"),
+  bank_test |> count(y) |> mutate(Dataset = "Testing"),
+) |>
+  group_by(Dataset) |>
+  mutate(Percentage = round(100 * n / sum(n), 2)) |>
+  ungroup() |>
+  select(Dataset, y, Frequency = n, Percentage) |>
+  kable(caption = "Response distribution in the training and testing sets")
+```
+
+### Five-fold cross-validation
+
+Cross-validation uses only the training data. In each fold, a model is trained on four-fifths of the training observations and validated on the remaining fifth. We stratify the folds by `y` to maintain class balance.
+
+```{r}
+#| label: cross-validation
+
+set.seed(558)
+bank_folds <- vfold_cv(bank_train, v = 5, strata = y)
+bank_folds
+```
+
+### Preprocessing recipe
+
+Both models will use the same predictors. The recipe accounts for previously unseen categorical levels and removes predictors with zero variance. We do not normalize numeric variables or create dummy variables because our planned tree and random forest models can work directly with numeric and factor predictors.
+
+```{r}
+#| label: modeling-recipe
+
+bank_recipe <- recipe(y ~. , data = bank_train) |>
+  step_novel(all_nominal_predictors()) |>
+  step_zv(all_predictors_allpredictors())
+
+bank_recipe
+```
+
+## Next Steps
+
+Next, we will define a clasification tree, construct a custom hyperparameter grid, tune it using these five cross-validation folds, and select the best settings using an appropriate classification metric.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
