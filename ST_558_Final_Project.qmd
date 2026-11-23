@@ -1,0 +1,14 @@
+---
+title: "ST_558_Final_Project"
+author: "Stanley Xiao"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+bank_data <- read_csv("Dataset/bank_clean.csv")
+dim(bank_data)
+names(bank_data)
+```
+
