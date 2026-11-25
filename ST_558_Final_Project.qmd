@@ -1,10 +1,16 @@
 ---
-title: "ST_558_Final_Project"
+title: "Bank Marketing: Predicting Term Deposit Subscriptions"
+subtitle: "ST 558 Final Project"
 author: "Stanley Xiao"
 format:
   html:
     toc: true
     theme: cosmo
+    code-fold: true
+    code-tools: true
+    embed-resources: true
+execute:
+  message: false
 editor: visual
 ---
 
@@ -12,7 +18,9 @@ editor: visual
 
 This project uses the Bank Marketing dataset to predict whether a customer subscribes to a term deposit after being contacted during a marketing campaign by a Portuguese banking institution. The response variable, `y`, records subscription status (`yes` or `no`). Customer demographics, financial information, and marketing contact characteristics provide possible predictors. 
 
-The data were used in ST 558 Project 2 and originate from the [Kaggle Banking Dataset (Marketing Targets)](https://www.kaggle.com/datasets/prakharrathi25/banking-dataset-marketing-targets), based on the [UCI Bank Marketing dataset](https://archive.ics.uci.edu/dataset/222/bank+marketing). The original training and testing files from Kaggle were combined and duplicate rows removed in Project 2. **A new training/test split will be created for this final project**; the original Kaggle split is not used for model evaluation.
+The data were used in ST 558 Project 2 and originate from the [Kaggle Banking Dataset (Marketing Targets)](https://www.kaggle.com/datasets/prakharrathi25/banking-dataset-marketing-targets), based on the [UCI Bank Marketing dataset](https://archive.ics.uci.edu/dataset/222/bank+marketing). 
+
+Important predictors include `age` and `job` which describe customer demographics, `balance`, `housing`, and `loan` describe financial circumstances, and `campaign`, `previous`, and `poutcome` describe marketing contact history. The variable `duration` measures the length of the last contact and is available only after that contact. These variables may help distinguish customers who subscribe from those who do not.
 
 Our goal is to compare a classification tree and a random forest using the `tidymodels` framework, select the better-performing model on a held-out test set, and make predictions available through an API.
 
@@ -24,8 +32,25 @@ library(knitr)
 library(tidymodels)
 library(ranger)
 
-# Read the cleaned dataset created for Project 2
-bank_data <- read_csv("Dataset/bank_clean.csv", show_col_types = FALSE)
+# Import the original training and testing datasets
+bank_original_train <- read_delim(
+  "Dataset/train.csv",
+  delim = ";",
+  show_col_types = FALSE
+)
+
+bank_original_test <- read_delim(
+  "Dataset/test.csv",
+  delim = ";",
+  show_col_types = FALSE
+)
+
+# Combine the original datasets and remove duplicate observations
+bank_data <- bind_rows(
+  bank_original_train,
+  bank_original_test
+) |>
+  distinct()
 
 # Convert categorical columns (including the response) to facotrs)
 categorical_vars <- c(
@@ -41,7 +66,9 @@ bank_data <- bank_data |>
   mutate(y = factor(y, levels = c("yes", "no")))
 ```
 
-The cleaned dataset contains `r nrow(bank_data)` observations and `r ncol(bank_data)` variables. Numeric variables include customer age, account balance, and campaign contact measures; categorical variables include job, education, housing loan status, and the response.
+The original training and testing datasets from Kaggle are combined into a single dataset and duplicate observations are removed.
+
+The resulting dataset contains `r nrow(bank_data)` observations and `r ncol(bank_data)` variables including the response.
 
 ### Dataset dimensions and variable types
 
@@ -73,7 +100,7 @@ sum(duplicated(bank_data))
 
 The value `unknown` appears in some categorical variables and is retained as a category rather than automatically treated as missing. The duplicate count above verifies whether any identical records remain in the cleaned dataset.
 
-## Exploratory Analaysis of the Response
+## Exploratory Analysis of the Response
 
 ### Term deposit subscription frequencies
 
@@ -110,17 +137,13 @@ subscription_summary |>
   theme_minimal()
 ```
 
-The subscription distribution helps us understand the relative frequency of `yes` and `no` outcomes. This is important when selecting an appropriate performance metric for the classification models in later sections.
-
-## Next Steps
-
-In the next stage, we will create a reproducible 70% training / 30% testing split and five-fold cross-validation folds. We will then specify and tune a classification tree and a random forest, compare their test-set performance, and refit the selected model to the full dataset for the API.
+Only `r subscription_summary$Percentage[subscription_summary$y == "yes"]`% of observations are subscribers. Because the response is imbalanced, accuracy alone can be misleading: a model that always predicts no subscription could achieve high accuracy without identifying any subscribers. ROC AUC is used as the primary metric because it measures how well predicted probabilities rank subscribers above non-subscribers across thresholds. Sensitivity and specificity provide additional information about class predictions.
 
 ## Modeling Setup
 
 ### Training and testing split
 
-We use a reproducible 70% training / 30% testing split, stratified by the subscription outcome `y`. Stratification helps maintain similar proportions of subscribes and non-subscribers in both sets. The test set will be reserved for the final comparison of the tuned models.
+We use a reproducible 70% training / 30% testing split, stratified by the subscription outcome `y`. Stratification helps maintain similar proportions of subscribers and non-subscribers in both sets. The test set will be reserved for the final comparison of the tuned models.
 
 ```{r}
 #| label: train-test-split
@@ -143,7 +166,7 @@ tibble(
 
 bind_rows(
   bank_train |> count(y) |> mutate(Dataset = "Training"),
-  bank_test |> count(y) |> mutate(Dataset = "Testing"),
+  bank_test |> count(y) |> mutate(Dataset = "Testing")
 ) |>
   group_by(Dataset) |>
   mutate(Percentage = round(100 * n / sum(n), 2)) |>
@@ -171,16 +194,12 @@ Both models will use the same predictors. The recipe accounts for previously uns
 ```{r}
 #| label: modeling-recipe
 
-bank_recipe <- recipe(y ~. , data = bank_train) |>
+bank_recipe <- recipe(y ~ ., data = bank_train) |>
   step_novel(all_nominal_predictors()) |>
   step_zv(all_predictors())
 
 bank_recipe
 ```
-
-## Next Steps
-
-Next, we will define a clasification tree, construct a custom hyperparameter grid, tune it using these five cross-validation folds, and select the best settings using an appropriate classification metric.
 
 ## Classification Tree Model
 
@@ -239,7 +258,7 @@ collect_metrics(tree_tune) |>
   head(10) |>
   kable(
     digits = 4,
-    caption = "Top 10 classifcation trees by cross-validated ROC AUC"
+    caption = "Top 10 classification trees by cross-validated ROC AUC"
   )
 ```
 
@@ -259,11 +278,11 @@ final_tree_fit <- fit(final_tree_wf, data = bank_train)
 show_best(tree_tune, metric = "roc_auc", n = 1) |>
   kable(
     digits = 4,
-    caption = "Best cross-validated classifcation tree"
+    caption = "Best cross-validated classification tree"
   )
 ```
 
-The table above reports the best tree's cross-validated ROC AUC and tuning parameters. A high ROC AUC indications better discrimination between subscribes and non-subscribers across classification thresholds. 
+The table above reports the best tree's cross-validated ROC AUC and tuning parameters. A higher ROC AUC indicates better discrimination between subscribers and non-subscribers across classification thresholds.
 
 ## Random Forest Model
 
@@ -320,7 +339,6 @@ collect_metrics(rf_tune) |>
 ```
 
 ```{r}
-
 #| label: forest-tuning-plot
 
 collect_metrics(rf_tune) |>
@@ -368,27 +386,112 @@ show_best(rf_tune, metric = "roc_auc", n = 1) |>
 
 The selected random forest is fitted to the entire training set. The test set remains unused until the final model comparison.
 
+## Model Comparison and Selection
 
+### Test-set predictions
 
+Both tuned models are evaluated on the same held-out test set. We obtain predicted classes and probabilities of subscription.
 
+```{r}
+#| label: test-predictions
 
+tree_test_pred <- bind_cols(
+  bank_test |> select(y),
+  predict(final_tree_fit, new_data = bank_test),
+  predict(final_tree_fit, new_data = bank_test, type = "prob")
+)
 
+rf_test_pred <- bind_cols(
+  bank_test |> select(y),
+  predict(final_rf_fit, new_data = bank_test),
+  predict(final_rf_fit, new_data = bank_test, type = "prob")
+)
+```
 
+### Compare test-set performance
 
+ROC AUC measures discrimination across classification thresholds. Sensitivity measures the proportion of actual subscribers correctly classified while specificity measures the proportion of actual non-subscribers correctly classified.
 
+```{r}
+#| label: test-metrics
 
+test_metrics <- metric_set(roc_auc, sens, spec)
 
+model_comparison <- bind_rows(
+  test_metrics(tree_test_pred, truth = y, estimate = .pred_class, .pred_yes) |>
+    mutate(Model = "Classification Tree"),
+  test_metrics(rf_test_pred, truth = y, estimate = .pred_class, .pred_yes) |>
+    mutate(Model = "Random Forest")
+) |>
+  select(Model, .metric, .estimate) |>
+  pivot_wider(names_from = .metric, values_from = .estimate) |>
+  arrange(desc(roc_auc))
 
+model_comparison |>
+  kable(digits = 4, caption = "Held-out test-set model performance")
+```
 
+```{r}
+#| label: test-roc-plot
 
+bind_rows(
+  roc_curve(tree_test_pred, truth = y, .pred_yes) |>
+    mutate(Model = "Classification Tree"),
+  roc_curve(rf_test_pred, truth = y, .pred_yes) |>
+    mutate(Model = "Random Forest")
+) |>
+  ggplot(aes(x = 1 - specificity, y = sensitivity, color = Model)) +
+  geom_path(linewidth = 1) +
+  geom_abline(linetype = "dashed", color = "gray80") +
+  coord_equal() +
+  labs(
+    title = "ROC Curves on the Test Set",
+    x = "False positive rate",
+    y = "True positive rate"
+  ) +
+  theme_minimal()
+```
 
+### Select the overall best model
 
+```{r}
+#| label: select-overall-model
 
+# In an exact tie, prefer the simpler classification tree
+best_model_name <- model_comparison$Model[1]
+best_model_auc <- model_comparison$roc_auc[1]
 
+best_model_wf <- if (best_model_name == "Random Forest") {
+  final_rf_wf
+} else {
+  final_tree_wf
+}
+```
 
+The selected model is the **`r best_model_name`**, with a test-set ROC AUC of `r round(best_model_auc, 4)`. This model is selected based on the highest test-set ROC AUC with ties resolved in favor of the simpler classification tree.
 
+## Final Model
 
+After selecting the best model, we refit its finalized workflow to the entire dataset using the previously selected tuning parameters. No additional tuning is performed. The saved workflow includes the fitted preprocessing recipe and model.
 
+```{r}
+#| label: fit-final-model
 
+set.seed(558)
 
+final_model <- fit(best_model_wf, data = bank_data)
 
+saveRDS(final_model, "final_model.rds")
+```
+
+The saved model will be used by the prediction API. The test-set metrics above describe the training-set-fitted models used for selection, not an independent evaluation of the final full-data fit.
+
+## Conclusion
+
+The classification tree and random forest were tuned using five-fold cross-validation and compared on a held-out test set. The classification tree achieved a test-set ROC AUC of `r round(model_comparison$roc_auc[model_comparison$Model == "Classification Tree"], 4)`, while the random forest achieved `r round(model_comparison$roc_auc[model_comparison$Model == "Random Forest"], 4)`. Based on ROC AUC, the selected model is the `r best_model_name`.
+
+The higher ROC AUC of the random forest suggests that combining multiple trees improves discrimination between subscribers and non-subscribers compared with a single classification tree. The random forest achieved sensitivity of `r round(model_comparison$sens[model_comparison$Model == "Random Forest"], 4)` and specificity of `r round(model_comparison$spec[model_comparison$Model == "Random Forest"], 4)`. Sensitivity and specificity should be considered alongside ROC AUC because strong discrimination does not necessarily imply that a model identifies most subscribers at its default classification threshold. Future work could investigate alternative thresholds based on the costs of false positives and false negatives.
+
+An important limitation is that `duration` is only known after the marketing contact. The fitted model is intended for prediction when call duration is available rather than for identifying potential subscribers before a call. A pre-contact model would need to exclude this variable and be evaluated separately.
+
+The selected workflow was refitted using the entire dataset and saved for deployment through a prediction API.
