@@ -16,11 +16,11 @@ editor: visual
 
 ## Introduction
 
-This project uses the Bank Marketing dataset to predict whether a customer subscribes to a term deposit after being contacted during a marketing campaign by a Portuguese banking institution. The response variable, `y`, records subscription status (`yes` or `no`). Customer demographics, financial information, and marketing contact characteristics provide possible predictors. 
+This project uses the [Kaggle Banking Dataset (Marketing Targets)](https://www.kaggle.com/datasets/prakharrathi25/banking-dataset-marketing-targets), based on the [UCI Bank Marketing dataset](https://archive.ics.uci.edu/dataset/222/bank+marketing). 
 
-The data were used in ST 558 Project 2 and originate from the [Kaggle Banking Dataset (Marketing Targets)](https://www.kaggle.com/datasets/prakharrathi25/banking-dataset-marketing-targets), based on the [UCI Bank Marketing dataset](https://archive.ics.uci.edu/dataset/222/bank+marketing). 
+Our goal is to predict whether a customer subscribes to a term deposit after being contacted during a marketing campaign by a Portuguese banking institution. The response variable, `y`, records subscription status (`yes` or `no`). Customer demographics, financial information, and marketing contact characteristics provide possible predictors. 
 
-Important predictors include `age` and `job` which describe customer demographics, `balance`, `housing`, and `loan` describe financial circumstances, and `campaign`, `previous`, and `poutcome` describe marketing contact history. The variable `duration` measures the length of the last contact and is available only after that contact. These variables may help distinguish customers who subscribe from those who do not.
+Important predictors include `age` and `job` which describe customer demographics. Variables like `balance`, `housing`, and `loan` describe financial circumstances. The variables `campaign`, `previous`, and `poutcome` describe marketing contact history. The variable `duration` measures the length of the last contact and is available only after that contact. These variables may help distinguish customers who subscribe from those who do not.
 
 Our goal is to compare a classification tree and a random forest using the `tidymodels` framework, select the better-performing model on a held-out test set, and make predictions available through an API.
 
@@ -52,7 +52,7 @@ bank_data <- bind_rows(
 ) |>
   distinct()
 
-# Convert categorical columns (including the response) to facotrs)
+# Convert categorical columns (including the response) to factors)
 categorical_vars <- c(
   "job", "marital", "education", "default", "housing", "loan",
   "contact", "month", "poutcome", "y"
@@ -66,9 +66,7 @@ bank_data <- bank_data |>
   mutate(y = factor(y, levels = c("yes", "no")))
 ```
 
-The original training and testing datasets from Kaggle are combined into a single dataset and duplicate observations are removed.
-
-The resulting dataset contains `r nrow(bank_data)` observations and `r ncol(bank_data)` variables including the response.
+The original training and testing datasets from Kaggle are combined into a single dataset and duplicate observations are removed. The resulting dataset contains `r nrow(bank_data)` observations and `r ncol(bank_data)` variables including the response.
 
 ### Dataset dimensions and variable types
 
@@ -137,13 +135,13 @@ subscription_summary |>
   theme_minimal()
 ```
 
-Only `r subscription_summary$Percentage[subscription_summary$y == "yes"]`% of observations are subscribers. Because the response is imbalanced, accuracy alone can be misleading: a model that always predicts no subscription could achieve high accuracy without identifying any subscribers. ROC AUC is used as the primary metric because it measures how well predicted probabilities rank subscribers above non-subscribers across thresholds. Sensitivity and specificity provide additional information about class predictions.
+Only `r subscription_summary$Percentage[subscription_summary$y == "yes"]`% of observations are subscribers. Because the response is imbalanced, a model could achieve high accuracy by predicting no subscription for every customer. ROC AUC is used as the primary metric because it measures how well the model distinguishes between subscribers and non-subscribers across different classification thresholds. We also use sensitivity and specificity to evaluate how well the model predicts each class.
 
 ## Modeling Setup
 
 ### Training and testing split
 
-We use a reproducible 70% training / 30% testing split, stratified by the subscription outcome `y`. Stratification helps maintain similar proportions of subscribers and non-subscribers in both sets. The test set will be reserved for the final comparison of the tuned models.
+We split the data into a 70% training set and a 30% testing set, stratified by the subscription outcome `y`. The test set is reserved for the final comparison of the tuned models.
 
 ```{r}
 #| label: train-test-split
@@ -189,7 +187,7 @@ bank_folds
 
 ### Preprocessing recipe
 
-Both models will use the same predictors. The recipe accounts for previously unseen categorical levels and removes predictors with zero variance. We do not normalize numeric variables or create dummy variables because our planned tree and random forest models can work directly with numeric and factor predictors.
+The classification tree and random forest will use the same predictors. The recipe accounts for previously unseen categorical levels and removes predictors with zero variance.
 
 ```{r}
 #| label: modeling-recipe
@@ -205,7 +203,7 @@ bank_recipe
 
 ### Model specification and tuning grid
 
-A classification tree predicts term deposit subscription by repeatedly splitting customers into groups based on predictor values. We tune three parameters: `cost_complexity` controls pruning, `tree_depth` limits the number of splits along a path, and `min_n` controls the minimum number of observations needed to attempt a split.
+A classification tree predicts term deposit subscription by repeatedly splitting customers into groups based on predictor values. We tune three parameters. The `cost_complexity` parameter controls pruning and `tree_depth` limits the maximum depth of the tree. The `min_n` parameter controls the minimum number of observations needed to attempt a split.
 
 ```{r}
 #| label: tree-specification
@@ -237,7 +235,7 @@ tree_grid
 
 ### Five-fold cross-validation
 
-We evaluate the candidate trees with ROC AUC, sensitivity, and specificity. Because `yes` is the first level of `y`, these metrics treat subscription as the event of interest. ROC AUC is the primary selection metric because the response classes are imbalanced.
+We evaluate the candidate trees using ROC AUC, sensitivity, and specificity. Since `yes` is the first level of `y`, subscription is treated as the event of interest. We select the best tree based on ROC AUC.
 
 ```{r}
 #| label: tune-classification-tree
@@ -288,7 +286,7 @@ The table above reports the best tree's cross-validated ROC AUC and tuning param
 
 ### Model specification and tuning grid
 
-A random forest combines many classification trees trained on bootstrap samples. At each split, a random subset of predictors is considered. This reduces correlation among trees and can reduce variance relative to a single tree. We tune `mtry`, the number of candidate predictors considered at each split, while fixing `trees` at 500 and `min_n` at 10.
+A random forest combines many classification trees trained on bootstrap samples. At each split, a random subset of predictors is considered. This reduces correlation among trees and can reduce variance relative to a single tree. We tune `mtry` which determines the number of candidate predictors considered at each split. We fix `trees` at 500 and `min_n` at 10.
 
 ```{r}
 #| label: forest-specification
@@ -384,7 +382,7 @@ show_best(rf_tune, metric = "roc_auc", n = 1) |>
   )
 ```
 
-The selected random forest is fitted to the entire training set. The test set remains unused until the final model comparison.
+The selected random forest is fitted to the entire training set. 
 
 ## Model Comparison and Selection
 
@@ -468,7 +466,7 @@ best_model_wf <- if (best_model_name == "Random Forest") {
 }
 ```
 
-The selected model is the **`r best_model_name`**, with a test-set ROC AUC of `r round(best_model_auc, 4)`. This model is selected based on the highest test-set ROC AUC with ties resolved in favor of the simpler classification tree.
+The selected model is the **`r best_model_name`** with a test-set ROC AUC of `r round(best_model_auc, 4)`. This model is selected based on the highest test-set ROC AUC with ties resolved in favor of the simpler classification tree.
 
 ## Final Model
 
@@ -484,13 +482,13 @@ final_model <- fit(best_model_wf, data = bank_data)
 saveRDS(final_model, "final_model.rds")
 ```
 
-The saved model will be used by the prediction API. The test-set metrics above describe the training-set-fitted models used for selection, not an independent evaluation of the final full-data fit.
+The saved model will be used by the prediction API. The test-set metrics above evaluate the models fitted to the training set rather than the final model fitted to the entire dataset.
 
 ## Conclusion
 
 The classification tree and random forest were tuned using five-fold cross-validation and compared on a held-out test set. The classification tree achieved a test-set ROC AUC of `r round(model_comparison$roc_auc[model_comparison$Model == "Classification Tree"], 4)`, while the random forest achieved `r round(model_comparison$roc_auc[model_comparison$Model == "Random Forest"], 4)`. Based on ROC AUC, the selected model is the `r best_model_name`.
 
-The higher ROC AUC of the random forest suggests that combining multiple trees improves discrimination between subscribers and non-subscribers compared with a single classification tree. The random forest achieved sensitivity of `r round(model_comparison$sens[model_comparison$Model == "Random Forest"], 4)` and specificity of `r round(model_comparison$spec[model_comparison$Model == "Random Forest"], 4)`. Sensitivity and specificity should be considered alongside ROC AUC because strong discrimination does not necessarily imply that a model identifies most subscribers at its default classification threshold. Future work could investigate alternative thresholds based on the costs of false positives and false negatives.
+The higher ROC AUC of the random forest suggests that combining multiple trees improves discrimination between subscribers and non-subscribers compared to a single classification tree. The random forest achieved a sensitivity of `r round(model_comparison$sens[model_comparison$Model == "Random Forest"], 4)` and a specificity of `r round(model_comparison$spec[model_comparison$Model == "Random Forest"], 4)`. A high ROC AUC does not necessarily mean that the model correctly identifies most subscribers at the default classification threshold. 
 
 An important limitation is that `duration` is only known after the marketing contact. The fitted model is intended for prediction when call duration is available rather than for identifying potential subscribers before a call. A pre-contact model would need to exclude this variable and be evaluated separately.
 

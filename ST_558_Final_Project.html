@@ -2280,9 +2280,9 @@ vertical-align: -.125em;
 
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
-<p>This project uses the Bank Marketing dataset to predict whether a customer subscribes to a term deposit after being contacted during a marketing campaign by a Portuguese banking institution. The response variable, <code>y</code>, records subscription status (<code>yes</code> or <code>no</code>). Customer demographics, financial information, and marketing contact characteristics provide possible predictors.</p>
-<p>The data were used in ST 558 Project 2 and originate from the <a href="https://www.kaggle.com/datasets/prakharrathi25/banking-dataset-marketing-targets">Kaggle Banking Dataset (Marketing Targets)</a>, based on the <a href="https://archive.ics.uci.edu/dataset/222/bank+marketing">UCI Bank Marketing dataset</a>.</p>
-<p>Important predictors include <code>age</code> and <code>job</code> which describe customer demographics, <code>balance</code>, <code>housing</code>, and <code>loan</code> describe financial circumstances, and <code>campaign</code>, <code>previous</code>, and <code>poutcome</code> describe marketing contact history. The variable <code>duration</code> measures the length of the last contact and is available only after that contact. These variables may help distinguish customers who subscribe from those who do not.</p>
+<p>This project uses the <a href="https://www.kaggle.com/datasets/prakharrathi25/banking-dataset-marketing-targets">Kaggle Banking Dataset (Marketing Targets)</a>, based on the <a href="https://archive.ics.uci.edu/dataset/222/bank+marketing">UCI Bank Marketing dataset</a>.</p>
+<p>Our goal is to predict whether a customer subscribes to a term deposit after being contacted during a marketing campaign by a Portuguese banking institution. The response variable, <code>y</code>, records subscription status (<code>yes</code> or <code>no</code>). Customer demographics, financial information, and marketing contact characteristics provide possible predictors.</p>
+<p>Important predictors include <code>age</code> and <code>job</code> which describe customer demographics. Variables like <code>balance</code>, <code>housing</code>, and <code>loan</code> describe financial circumstances. The variables <code>campaign</code>, <code>previous</code>, and <code>poutcome</code> describe marketing contact history. The variable <code>duration</code> measures the length of the last contact and is available only after that contact. These variables may help distinguish customers who subscribe from those who do not.</p>
 <p>Our goal is to compare a classification tree and a random forest using the <code>tidymodels</code> framework, select the better-performing model on a held-out test set, and make predictions available through an API.</p>
 </section>
 <section id="data-loading-preprocessing" class="level2">
@@ -2349,7 +2349,7 @@ vertical-align: -.125em;
 <span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
 <span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
 <span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert categorical columns (including the response) to facotrs)</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert categorical columns (including the response) to factors)</span></span>
 <span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>categorical_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
 <span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;job&quot;</span>, <span class="st">&quot;marital&quot;</span>, <span class="st">&quot;education&quot;</span>, <span class="st">&quot;default&quot;</span>, <span class="st">&quot;housing&quot;</span>, <span class="st">&quot;loan&quot;</span>,</span>
 <span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;contact&quot;</span>, <span class="st">&quot;month&quot;</span>, <span class="st">&quot;poutcome&quot;</span>, <span class="st">&quot;y&quot;</span></span>
@@ -2363,8 +2363,7 @@ vertical-align: -.125em;
 <span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y =</span> <span class="fu">factor</span>(y, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;yes&quot;</span>, <span class="st">&quot;no&quot;</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<p>The original training and testing datasets from Kaggle are combined into a single dataset and duplicate observations are removed.</p>
-<p>The resulting dataset contains 45211 observations and 17 variables including the response.</p>
+<p>The original training and testing datasets from Kaggle are combined into a single dataset and duplicate observations are removed. The resulting dataset contains 45211 observations and 17 variables including the response.</p>
 <section id="dataset-dimensions-and-variable-types" class="level3">
 <h3 class="anchored" data-anchor-id="dataset-dimensions-and-variable-types">Dataset dimensions and variable types</h3>
 <div class="cell">
@@ -2632,14 +2631,14 @@ vertical-align: -.125em;
 </div>
 </div>
 </div>
-<p>Only 11.7% of observations are subscribers. Because the response is imbalanced, accuracy alone can be misleading: a model that always predicts no subscription could achieve high accuracy without identifying any subscribers. ROC AUC is used as the primary metric because it measures how well predicted probabilities rank subscribers above non-subscribers across thresholds. Sensitivity and specificity provide additional information about class predictions.</p>
+<p>Only 11.7% of observations are subscribers. Because the response is imbalanced, a model could achieve high accuracy by predicting no subscription for every customer. ROC AUC is used as the primary metric because it measures how well the model distinguishes between subscribers and non-subscribers across different classification thresholds. We also use sensitivity and specificity to evaluate how well the model predicts each class.</p>
 </section>
 </section>
 <section id="modeling-setup" class="level2">
 <h2 class="anchored" data-anchor-id="modeling-setup">Modeling Setup</h2>
 <section id="training-and-testing-split" class="level3">
 <h3 class="anchored" data-anchor-id="training-and-testing-split">Training and testing split</h3>
-<p>We use a reproducible 70% training / 30% testing split, stratified by the subscription outcome <code>y</code>. Stratification helps maintain similar proportions of subscribers and non-subscribers in both sets. The test set will be reserved for the final comparison of the tuned models.</p>
+<p>We split the data into a 70% training set and a 30% testing set, stratified by the subscription outcome <code>y</code>. The test set is reserved for the final comparison of the tuned models.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -2760,7 +2759,7 @@ vertical-align: -.125em;
 </section>
 <section id="preprocessing-recipe" class="level3">
 <h3 class="anchored" data-anchor-id="preprocessing-recipe">Preprocessing recipe</h3>
-<p>Both models will use the same predictors. The recipe accounts for previously unseen categorical levels and removes predictors with zero variance. We do not normalize numeric variables or create dummy variables because our planned tree and random forest models can work directly with numeric and factor predictors.</p>
+<p>The classification tree and random forest will use the same predictors. The recipe accounts for previously unseen categorical levels and removes predictors with zero variance.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -2808,7 +2807,7 @@ predictor: 16</code></pre>
 <h2 class="anchored" data-anchor-id="classification-tree-model">Classification Tree Model</h2>
 <section id="model-specification-and-tuning-grid" class="level3">
 <h3 class="anchored" data-anchor-id="model-specification-and-tuning-grid">Model specification and tuning grid</h3>
-<p>A classification tree predicts term deposit subscription by repeatedly splitting customers into groups based on predictor values. We tune three parameters: <code>cost_complexity</code> controls pruning, <code>tree_depth</code> limits the number of splits along a path, and <code>min_n</code> controls the minimum number of observations needed to attempt a split.</p>
+<p>A classification tree predicts term deposit subscription by repeatedly splitting customers into groups based on predictor values. We tune three parameters. The <code>cost_complexity</code> parameter controls pruning and <code>tree_depth</code> limits the maximum depth of the tree. The <code>min_n</code> parameter controls the minimum number of observations needed to attempt a split.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -2856,7 +2855,7 @@ predictor: 16</code></pre>
 </section>
 <section id="five-fold-cross-validation-1" class="level3">
 <h3 class="anchored" data-anchor-id="five-fold-cross-validation-1">Five-fold cross-validation</h3>
-<p>We evaluate the candidate trees with ROC AUC, sensitivity, and specificity. Because <code>yes</code> is the first level of <code>y</code>, these metrics treat subscription as the event of interest. ROC AUC is the primary selection metric because the response classes are imbalanced.</p>
+<p>We evaluate the candidate trees using ROC AUC, sensitivity, and specificity. Since <code>yes</code> is the first level of <code>y</code>, subscription is treated as the event of interest. We select the best tree based on ROC AUC.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -3044,7 +3043,7 @@ predictor: 16</code></pre>
 <h2 class="anchored" data-anchor-id="random-forest-model">Random Forest Model</h2>
 <section id="model-specification-and-tuning-grid-1" class="level3">
 <h3 class="anchored" data-anchor-id="model-specification-and-tuning-grid-1">Model specification and tuning grid</h3>
-<p>A random forest combines many classification trees trained on bootstrap samples. At each split, a random subset of predictors is considered. This reduces correlation among trees and can reduce variance relative to a single tree. We tune <code>mtry</code>, the number of candidate predictors considered at each split, while fixing <code>trees</code> at 500 and <code>min_n</code> at 10.</p>
+<p>A random forest combines many classification trees trained on bootstrap samples. At each split, a random subset of predictors is considered. This reduces correlation among trees and can reduce variance relative to a single tree. We tune <code>mtry</code> which determines the number of candidate predictors considered at each split. We fix <code>trees</code> at 500 and <code>min_n</code> at 10.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>
@@ -3230,7 +3229,7 @@ predictor: 16</code></pre>
 </table>
 </div>
 </div>
-<p>The selected random forest is fitted to the entire training set. The test set remains unused until the final model comparison.</p>
+<p>The selected random forest is fitted to the entire training set.</p>
 </section>
 </section>
 <section id="model-comparison-and-selection" class="level2">
@@ -3349,7 +3348,7 @@ predictor: 16</code></pre>
 <span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<p>The selected model is the <strong>Random Forest</strong>, with a test-set ROC AUC of 0.929. This model is selected based on the highest test-set ROC AUC with ties resolved in favor of the simpler classification tree.</p>
+<p>The selected model is the <strong>Random Forest</strong> with a test-set ROC AUC of 0.929. This model is selected based on the highest test-set ROC AUC with ties resolved in favor of the simpler classification tree.</p>
 </section>
 </section>
 <section id="final-model" class="level2">
@@ -3365,12 +3364,12 @@ predictor: 16</code></pre>
 <span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_model, <span class="st">&quot;final_model.rds&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<p>The saved model will be used by the prediction API. The test-set metrics above describe the training-set-fitted models used for selection, not an independent evaluation of the final full-data fit.</p>
+<p>The saved model will be used by the prediction API. The test-set metrics above evaluate the models fitted to the training set rather than the final model fitted to the entire dataset.</p>
 </section>
 <section id="conclusion" class="level2">
 <h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
 <p>The classification tree and random forest were tuned using five-fold cross-validation and compared on a held-out test set. The classification tree achieved a test-set ROC AUC of 0.8796, while the random forest achieved 0.929. Based on ROC AUC, the selected model is the Random Forest.</p>
-<p>The higher ROC AUC of the random forest suggests that combining multiple trees improves discrimination between subscribers and non-subscribers compared with a single classification tree. The random forest achieved sensitivity of 0.4329 and specificity of 0.9695. Sensitivity and specificity should be considered alongside ROC AUC because strong discrimination does not necessarily imply that a model identifies most subscribers at its default classification threshold. Future work could investigate alternative thresholds based on the costs of false positives and false negatives.</p>
+<p>The higher ROC AUC of the random forest suggests that combining multiple trees improves discrimination between subscribers and non-subscribers compared to a single classification tree. The random forest achieved a sensitivity of 0.4329 and a specificity of 0.9695. A high ROC AUC does not necessarily mean that the model correctly identifies most subscribers at the default classification threshold.</p>
 <p>An important limitation is that <code>duration</code> is only known after the marketing contact. The fitted model is intended for prediction when call duration is available rather than for identifying potential subscribers before a call. A pre-contact model would need to exclude this variable and be evaluated separately.</p>
 <p>The selected workflow was refitted using the entire dataset and saved for deployment through a prediction API.</p>
 <!-- -->
@@ -3848,11 +3847,11 @@ predictor: 16</code></pre>
 <span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a><span class="fu">## Introduction</span></span>
 <span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>This project uses the Bank Marketing dataset to predict whether a customer subscribes to a term deposit after being contacted during a marketing campaign by a Portuguese banking institution. The response variable, <span class="in">`y`</span>, records subscription status (<span class="in">`yes`</span> or <span class="in">`no`</span>). Customer demographics, financial information, and marketing contact characteristics provide possible predictors. </span>
+<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>This project uses the <span class="co">[</span><span class="ot">Kaggle Banking Dataset (Marketing Targets)</span><span class="co">](https://www.kaggle.com/datasets/prakharrathi25/banking-dataset-marketing-targets)</span>, based on the <span class="co">[</span><span class="ot">UCI Bank Marketing dataset</span><span class="co">](https://archive.ics.uci.edu/dataset/222/bank+marketing)</span>. </span>
 <span id="cb45-20"><a href="#cb45-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-21"><a href="#cb45-21" aria-hidden="true" tabindex="-1"></a>The data were used in ST 558 Project 2 and originate from the <span class="co">[</span><span class="ot">Kaggle Banking Dataset (Marketing Targets)</span><span class="co">](https://www.kaggle.com/datasets/prakharrathi25/banking-dataset-marketing-targets)</span>, based on the <span class="co">[</span><span class="ot">UCI Bank Marketing dataset</span><span class="co">](https://archive.ics.uci.edu/dataset/222/bank+marketing)</span>. </span>
+<span id="cb45-21"><a href="#cb45-21" aria-hidden="true" tabindex="-1"></a>Our goal is to predict whether a customer subscribes to a term deposit after being contacted during a marketing campaign by a Portuguese banking institution. The response variable, <span class="in">`y`</span>, records subscription status (<span class="in">`yes`</span> or <span class="in">`no`</span>). Customer demographics, financial information, and marketing contact characteristics provide possible predictors. </span>
 <span id="cb45-22"><a href="#cb45-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-23"><a href="#cb45-23" aria-hidden="true" tabindex="-1"></a>Important predictors include <span class="in">`age`</span> and <span class="in">`job`</span> which describe customer demographics, <span class="in">`balance`</span>, <span class="in">`housing`</span>, and <span class="in">`loan`</span> describe financial circumstances, and <span class="in">`campaign`</span>, <span class="in">`previous`</span>, and <span class="in">`poutcome`</span> describe marketing contact history. The variable <span class="in">`duration`</span> measures the length of the last contact and is available only after that contact. These variables may help distinguish customers who subscribe from those who do not.</span>
+<span id="cb45-23"><a href="#cb45-23" aria-hidden="true" tabindex="-1"></a>Important predictors include <span class="in">`age`</span> and <span class="in">`job`</span> which describe customer demographics. Variables like <span class="in">`balance`</span>, <span class="in">`housing`</span>, and <span class="in">`loan`</span> describe financial circumstances. The variables <span class="in">`campaign`</span>, <span class="in">`previous`</span>, and <span class="in">`poutcome`</span> describe marketing contact history. The variable <span class="in">`duration`</span> measures the length of the last contact and is available only after that contact. These variables may help distinguish customers who subscribe from those who do not.</span>
 <span id="cb45-24"><a href="#cb45-24" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb45-25"><a href="#cb45-25" aria-hidden="true" tabindex="-1"></a>Our goal is to compare a classification tree and a random forest using the <span class="in">`tidymodels`</span> framework, select the better-performing model on a held-out test set, and make predictions available through an API.</span>
 <span id="cb45-26"><a href="#cb45-26" aria-hidden="true" tabindex="-1"></a></span>
@@ -3884,7 +3883,7 @@ predictor: 16</code></pre>
 <span id="cb45-54"><a href="#cb45-54" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
 <span id="cb45-55"><a href="#cb45-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>()</span>
 <span id="cb45-56"><a href="#cb45-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-57"><a href="#cb45-57" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert categorical columns (including the response) to facotrs)</span></span>
+<span id="cb45-57"><a href="#cb45-57" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert categorical columns (including the response) to factors)</span></span>
 <span id="cb45-58"><a href="#cb45-58" aria-hidden="true" tabindex="-1"></a>categorical_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
 <span id="cb45-59"><a href="#cb45-59" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;job&quot;</span>, <span class="st">&quot;marital&quot;</span>, <span class="st">&quot;education&quot;</span>, <span class="st">&quot;default&quot;</span>, <span class="st">&quot;housing&quot;</span>, <span class="st">&quot;loan&quot;</span>,</span>
 <span id="cb45-60"><a href="#cb45-60" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;contact&quot;</span>, <span class="st">&quot;month&quot;</span>, <span class="st">&quot;poutcome&quot;</span>, <span class="st">&quot;y&quot;</span></span>
@@ -3898,435 +3897,433 @@ predictor: 16</code></pre>
 <span id="cb45-68"><a href="#cb45-68" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">y =</span> <span class="fu">factor</span>(y, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;yes&quot;</span>, <span class="st">&quot;no&quot;</span>)))</span>
 <span id="cb45-69"><a href="#cb45-69" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb45-70"><a href="#cb45-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-71"><a href="#cb45-71" aria-hidden="true" tabindex="-1"></a>The original training and testing datasets from Kaggle are combined into a single dataset and duplicate observations are removed.</span>
+<span id="cb45-71"><a href="#cb45-71" aria-hidden="true" tabindex="-1"></a>The original training and testing datasets from Kaggle are combined into a single dataset and duplicate observations are removed. The resulting dataset contains <span class="in">`r nrow(bank_data)`</span> observations and <span class="in">`r ncol(bank_data)`</span> variables including the response.</span>
 <span id="cb45-72"><a href="#cb45-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-73"><a href="#cb45-73" aria-hidden="true" tabindex="-1"></a>The resulting dataset contains <span class="in">`r nrow(bank_data)`</span> observations and <span class="in">`r ncol(bank_data)`</span> variables including the response.</span>
+<span id="cb45-73"><a href="#cb45-73" aria-hidden="true" tabindex="-1"></a><span class="fu">### Dataset dimensions and variable types</span></span>
 <span id="cb45-74"><a href="#cb45-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-75"><a href="#cb45-75" aria-hidden="true" tabindex="-1"></a><span class="fu">### Dataset dimensions and variable types</span></span>
-<span id="cb45-76"><a href="#cb45-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-79"><a href="#cb45-79" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-80"><a href="#cb45-80" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: variable-types</span></span>
-<span id="cb45-81"><a href="#cb45-81" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-82"><a href="#cb45-82" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(</span>
-<span id="cb45-83"><a href="#cb45-83" aria-hidden="true" tabindex="-1"></a>  <span class="at">Variable =</span> <span class="fu">names</span>(bank_data),</span>
-<span id="cb45-84"><a href="#cb45-84" aria-hidden="true" tabindex="-1"></a>  <span class="at">Type =</span> <span class="fu">vapply</span>(bank_data, <span class="cf">function</span>(x) <span class="fu">class</span>(x)[<span class="dv">1</span>], <span class="fu">character</span>(<span class="dv">1</span>))</span>
-<span id="cb45-85"><a href="#cb45-85" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb45-86"><a href="#cb45-86" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Variables and their data types&quot;</span>)</span>
-<span id="cb45-87"><a href="#cb45-87" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-77"><a href="#cb45-77" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-78"><a href="#cb45-78" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: variable-types</span></span>
+<span id="cb45-79"><a href="#cb45-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-80"><a href="#cb45-80" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(</span>
+<span id="cb45-81"><a href="#cb45-81" aria-hidden="true" tabindex="-1"></a>  <span class="at">Variable =</span> <span class="fu">names</span>(bank_data),</span>
+<span id="cb45-82"><a href="#cb45-82" aria-hidden="true" tabindex="-1"></a>  <span class="at">Type =</span> <span class="fu">vapply</span>(bank_data, <span class="cf">function</span>(x) <span class="fu">class</span>(x)[<span class="dv">1</span>], <span class="fu">character</span>(<span class="dv">1</span>))</span>
+<span id="cb45-83"><a href="#cb45-83" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb45-84"><a href="#cb45-84" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Variables and their data types&quot;</span>)</span>
+<span id="cb45-85"><a href="#cb45-85" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-86"><a href="#cb45-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-87"><a href="#cb45-87" aria-hidden="true" tabindex="-1"></a><span class="fu">### Missing values and duplicates</span></span>
 <span id="cb45-88"><a href="#cb45-88" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-89"><a href="#cb45-89" aria-hidden="true" tabindex="-1"></a><span class="fu">### Missing values and duplicates</span></span>
-<span id="cb45-90"><a href="#cb45-90" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-93"><a href="#cb45-93" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-94"><a href="#cb45-94" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: data-quality</span></span>
-<span id="cb45-95"><a href="#cb45-95" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-96"><a href="#cb45-96" aria-hidden="true" tabindex="-1"></a>missing_summary <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb45-97"><a href="#cb45-97" aria-hidden="true" tabindex="-1"></a>  <span class="at">Variable =</span> <span class="fu">names</span>(bank_data),</span>
-<span id="cb45-98"><a href="#cb45-98" aria-hidden="true" tabindex="-1"></a>  <span class="at">Missing =</span> <span class="fu">vapply</span>(bank_data, <span class="cf">function</span>(x) <span class="fu">sum</span>(<span class="fu">is.na</span>(x)), <span class="fu">integer</span>(<span class="dv">1</span>))</span>
-<span id="cb45-99"><a href="#cb45-99" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb45-100"><a href="#cb45-100" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-101"><a href="#cb45-101" aria-hidden="true" tabindex="-1"></a>missing_summary <span class="sc">|&gt;</span></span>
-<span id="cb45-102"><a href="#cb45-102" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Missing values by variable&quot;</span>)</span>
-<span id="cb45-103"><a href="#cb45-103" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-104"><a href="#cb45-104" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">duplicated</span>(bank_data))</span>
-<span id="cb45-105"><a href="#cb45-105" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-91"><a href="#cb45-91" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-92"><a href="#cb45-92" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: data-quality</span></span>
+<span id="cb45-93"><a href="#cb45-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-94"><a href="#cb45-94" aria-hidden="true" tabindex="-1"></a>missing_summary <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb45-95"><a href="#cb45-95" aria-hidden="true" tabindex="-1"></a>  <span class="at">Variable =</span> <span class="fu">names</span>(bank_data),</span>
+<span id="cb45-96"><a href="#cb45-96" aria-hidden="true" tabindex="-1"></a>  <span class="at">Missing =</span> <span class="fu">vapply</span>(bank_data, <span class="cf">function</span>(x) <span class="fu">sum</span>(<span class="fu">is.na</span>(x)), <span class="fu">integer</span>(<span class="dv">1</span>))</span>
+<span id="cb45-97"><a href="#cb45-97" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-98"><a href="#cb45-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-99"><a href="#cb45-99" aria-hidden="true" tabindex="-1"></a>missing_summary <span class="sc">|&gt;</span></span>
+<span id="cb45-100"><a href="#cb45-100" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Missing values by variable&quot;</span>)</span>
+<span id="cb45-101"><a href="#cb45-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-102"><a href="#cb45-102" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">duplicated</span>(bank_data))</span>
+<span id="cb45-103"><a href="#cb45-103" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-104"><a href="#cb45-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-105"><a href="#cb45-105" aria-hidden="true" tabindex="-1"></a>The value <span class="in">`unknown`</span> appears in some categorical variables and is retained as a category rather than automatically treated as missing. The duplicate count above verifies whether any identical records remain in the cleaned dataset.</span>
 <span id="cb45-106"><a href="#cb45-106" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-107"><a href="#cb45-107" aria-hidden="true" tabindex="-1"></a>The value <span class="in">`unknown`</span> appears in some categorical variables and is retained as a category rather than automatically treated as missing. The duplicate count above verifies whether any identical records remain in the cleaned dataset.</span>
+<span id="cb45-107"><a href="#cb45-107" aria-hidden="true" tabindex="-1"></a><span class="fu">## Exploratory Analysis of the Response</span></span>
 <span id="cb45-108"><a href="#cb45-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-109"><a href="#cb45-109" aria-hidden="true" tabindex="-1"></a><span class="fu">## Exploratory Analysis of the Response</span></span>
+<span id="cb45-109"><a href="#cb45-109" aria-hidden="true" tabindex="-1"></a><span class="fu">### Term deposit subscription frequencies</span></span>
 <span id="cb45-110"><a href="#cb45-110" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-111"><a href="#cb45-111" aria-hidden="true" tabindex="-1"></a><span class="fu">### Term deposit subscription frequencies</span></span>
-<span id="cb45-112"><a href="#cb45-112" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-115"><a href="#cb45-115" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-116"><a href="#cb45-116" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: response-distribution</span></span>
-<span id="cb45-117"><a href="#cb45-117" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-118"><a href="#cb45-118" aria-hidden="true" tabindex="-1"></a>subscription_summary <span class="ot">&lt;-</span> bank_data <span class="sc">|&gt;</span></span>
-<span id="cb45-119"><a href="#cb45-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(y, <span class="at">name =</span> <span class="st">&quot;Frequency&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb45-120"><a href="#cb45-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Percentage =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> Frequency <span class="sc">/</span> <span class="fu">sum</span>(Frequency), <span class="dv">2</span>))</span>
-<span id="cb45-121"><a href="#cb45-121" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-122"><a href="#cb45-122" aria-hidden="true" tabindex="-1"></a>subscription_summary <span class="sc">|&gt;</span></span>
-<span id="cb45-123"><a href="#cb45-123" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Term deposit subscription frequencies&quot;</span>)</span>
-<span id="cb45-124"><a href="#cb45-124" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb45-125"><a href="#cb45-125" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-128"><a href="#cb45-128" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-129"><a href="#cb45-129" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: response-plot</span></span>
-<span id="cb45-130"><a href="#cb45-130" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-131"><a href="#cb45-131" aria-hidden="true" tabindex="-1"></a>subscription_summary <span class="sc">|&gt;</span></span>
-<span id="cb45-132"><a href="#cb45-132" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> y, <span class="at">y =</span> Frequency, <span class="at">fill =</span> y)) <span class="sc">+</span> </span>
-<span id="cb45-133"><a href="#cb45-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
-<span id="cb45-134"><a href="#cb45-134" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(</span>
-<span id="cb45-135"><a href="#cb45-135" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">paste0</span>(Frequency, <span class="st">&quot; (&quot;</span>, Percentage, <span class="st">&quot;%)&quot;</span>)),</span>
-<span id="cb45-136"><a href="#cb45-136" aria-hidden="true" tabindex="-1"></a>    <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>,</span>
-<span id="cb45-137"><a href="#cb45-137" aria-hidden="true" tabindex="-1"></a>    <span class="at">size =</span> <span class="dv">4</span></span>
-<span id="cb45-138"><a href="#cb45-138" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb45-139"><a href="#cb45-139" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(</span>
-<span id="cb45-140"><a href="#cb45-140" aria-hidden="true" tabindex="-1"></a>    <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.12</span>))</span>
-<span id="cb45-141"><a href="#cb45-141" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb45-142"><a href="#cb45-142" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb45-143"><a href="#cb45-143" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Term Deposit Subscription Outcomes&quot;</span>,</span>
-<span id="cb45-144"><a href="#cb45-144" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;Subscribed to a term deposit?&quot;</span>,</span>
-<span id="cb45-145"><a href="#cb45-145" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">&quot;Number of customers&quot;</span></span>
-<span id="cb45-146"><a href="#cb45-146" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb45-147"><a href="#cb45-147" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
-<span id="cb45-148"><a href="#cb45-148" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-113"><a href="#cb45-113" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-114"><a href="#cb45-114" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: response-distribution</span></span>
+<span id="cb45-115"><a href="#cb45-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-116"><a href="#cb45-116" aria-hidden="true" tabindex="-1"></a>subscription_summary <span class="ot">&lt;-</span> bank_data <span class="sc">|&gt;</span></span>
+<span id="cb45-117"><a href="#cb45-117" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(y, <span class="at">name =</span> <span class="st">&quot;Frequency&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb45-118"><a href="#cb45-118" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Percentage =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> Frequency <span class="sc">/</span> <span class="fu">sum</span>(Frequency), <span class="dv">2</span>))</span>
+<span id="cb45-119"><a href="#cb45-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-120"><a href="#cb45-120" aria-hidden="true" tabindex="-1"></a>subscription_summary <span class="sc">|&gt;</span></span>
+<span id="cb45-121"><a href="#cb45-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Term deposit subscription frequencies&quot;</span>)</span>
+<span id="cb45-122"><a href="#cb45-122" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-123"><a href="#cb45-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-126"><a href="#cb45-126" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-127"><a href="#cb45-127" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: response-plot</span></span>
+<span id="cb45-128"><a href="#cb45-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-129"><a href="#cb45-129" aria-hidden="true" tabindex="-1"></a>subscription_summary <span class="sc">|&gt;</span></span>
+<span id="cb45-130"><a href="#cb45-130" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> y, <span class="at">y =</span> Frequency, <span class="at">fill =</span> y)) <span class="sc">+</span> </span>
+<span id="cb45-131"><a href="#cb45-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb45-132"><a href="#cb45-132" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(</span>
+<span id="cb45-133"><a href="#cb45-133" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">paste0</span>(Frequency, <span class="st">&quot; (&quot;</span>, Percentage, <span class="st">&quot;%)&quot;</span>)),</span>
+<span id="cb45-134"><a href="#cb45-134" aria-hidden="true" tabindex="-1"></a>    <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.5</span>,</span>
+<span id="cb45-135"><a href="#cb45-135" aria-hidden="true" tabindex="-1"></a>    <span class="at">size =</span> <span class="dv">4</span></span>
+<span id="cb45-136"><a href="#cb45-136" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb45-137"><a href="#cb45-137" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(</span>
+<span id="cb45-138"><a href="#cb45-138" aria-hidden="true" tabindex="-1"></a>    <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.12</span>))</span>
+<span id="cb45-139"><a href="#cb45-139" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb45-140"><a href="#cb45-140" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb45-141"><a href="#cb45-141" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Term Deposit Subscription Outcomes&quot;</span>,</span>
+<span id="cb45-142"><a href="#cb45-142" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;Subscribed to a term deposit?&quot;</span>,</span>
+<span id="cb45-143"><a href="#cb45-143" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">&quot;Number of customers&quot;</span></span>
+<span id="cb45-144"><a href="#cb45-144" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb45-145"><a href="#cb45-145" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb45-146"><a href="#cb45-146" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-147"><a href="#cb45-147" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-148"><a href="#cb45-148" aria-hidden="true" tabindex="-1"></a>Only <span class="in">`r subscription_summary$Percentage[subscription_summary$y == &quot;yes&quot;]`</span>% of observations are subscribers. Because the response is imbalanced, a model could achieve high accuracy by predicting no subscription for every customer. ROC AUC is used as the primary metric because it measures how well the model distinguishes between subscribers and non-subscribers across different classification thresholds. We also use sensitivity and specificity to evaluate how well the model predicts each class.</span>
 <span id="cb45-149"><a href="#cb45-149" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-150"><a href="#cb45-150" aria-hidden="true" tabindex="-1"></a>Only <span class="in">`r subscription_summary$Percentage[subscription_summary$y == &quot;yes&quot;]`</span>% of observations are subscribers. Because the response is imbalanced, accuracy alone can be misleading: a model that always predicts no subscription could achieve high accuracy without identifying any subscribers. ROC AUC is used as the primary metric because it measures how well predicted probabilities rank subscribers above non-subscribers across thresholds. Sensitivity and specificity provide additional information about class predictions.</span>
+<span id="cb45-150"><a href="#cb45-150" aria-hidden="true" tabindex="-1"></a><span class="fu">## Modeling Setup</span></span>
 <span id="cb45-151"><a href="#cb45-151" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-152"><a href="#cb45-152" aria-hidden="true" tabindex="-1"></a><span class="fu">## Modeling Setup</span></span>
+<span id="cb45-152"><a href="#cb45-152" aria-hidden="true" tabindex="-1"></a><span class="fu">### Training and testing split</span></span>
 <span id="cb45-153"><a href="#cb45-153" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-154"><a href="#cb45-154" aria-hidden="true" tabindex="-1"></a><span class="fu">### Training and testing split</span></span>
+<span id="cb45-154"><a href="#cb45-154" aria-hidden="true" tabindex="-1"></a>We split the data into a 70% training set and a 30% testing set, stratified by the subscription outcome <span class="in">`y`</span>. The test set is reserved for the final comparison of the tuned models.</span>
 <span id="cb45-155"><a href="#cb45-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-156"><a href="#cb45-156" aria-hidden="true" tabindex="-1"></a>We use a reproducible 70% training / 30% testing split, stratified by the subscription outcome <span class="in">`y`</span>. Stratification helps maintain similar proportions of subscribers and non-subscribers in both sets. The test set will be reserved for the final comparison of the tuned models.</span>
-<span id="cb45-157"><a href="#cb45-157" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-160"><a href="#cb45-160" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-161"><a href="#cb45-161" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: train-test-split</span></span>
+<span id="cb45-158"><a href="#cb45-158" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-159"><a href="#cb45-159" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: train-test-split</span></span>
+<span id="cb45-160"><a href="#cb45-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-161"><a href="#cb45-161" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
 <span id="cb45-162"><a href="#cb45-162" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-163"><a href="#cb45-163" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
-<span id="cb45-164"><a href="#cb45-164" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-165"><a href="#cb45-165" aria-hidden="true" tabindex="-1"></a>bank_split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(bank_data, <span class="at">prop =</span> <span class="fl">0.7</span>, <span class="at">strata =</span> y)</span>
-<span id="cb45-166"><a href="#cb45-166" aria-hidden="true" tabindex="-1"></a>bank_train <span class="ot">&lt;-</span> <span class="fu">training</span>(bank_split)</span>
-<span id="cb45-167"><a href="#cb45-167" aria-hidden="true" tabindex="-1"></a>bank_test <span class="ot">&lt;-</span> <span class="fu">testing</span>(bank_split)</span>
-<span id="cb45-168"><a href="#cb45-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-169"><a href="#cb45-169" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(</span>
-<span id="cb45-170"><a href="#cb45-170" aria-hidden="true" tabindex="-1"></a>  <span class="at">Dataset =</span> <span class="fu">c</span>(<span class="st">&quot;Full data&quot;</span>, <span class="st">&quot;Training set&quot;</span>, <span class="st">&quot;Testing set&quot;</span>),</span>
-<span id="cb45-171"><a href="#cb45-171" aria-hidden="true" tabindex="-1"></a>  <span class="at">Observations =</span> <span class="fu">c</span>(<span class="fu">nrow</span>(bank_data), <span class="fu">nrow</span>(bank_train), <span class="fu">nrow</span>(bank_test))</span>
-<span id="cb45-172"><a href="#cb45-172" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb45-173"><a href="#cb45-173" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Dataset sizes after the 70/30 split&quot;</span>)</span>
-<span id="cb45-174"><a href="#cb45-174" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb45-175"><a href="#cb45-175" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-178"><a href="#cb45-178" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-179"><a href="#cb45-179" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: split-response-balance</span></span>
-<span id="cb45-180"><a href="#cb45-180" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-181"><a href="#cb45-181" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(</span>
-<span id="cb45-182"><a href="#cb45-182" aria-hidden="true" tabindex="-1"></a>  bank_train <span class="sc">|&gt;</span> <span class="fu">count</span>(y) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">Dataset =</span> <span class="st">&quot;Training&quot;</span>),</span>
-<span id="cb45-183"><a href="#cb45-183" aria-hidden="true" tabindex="-1"></a>  bank_test <span class="sc">|&gt;</span> <span class="fu">count</span>(y) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">Dataset =</span> <span class="st">&quot;Testing&quot;</span>)</span>
-<span id="cb45-184"><a href="#cb45-184" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb45-185"><a href="#cb45-185" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Dataset) <span class="sc">|&gt;</span></span>
-<span id="cb45-186"><a href="#cb45-186" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Percentage =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n <span class="sc">/</span> <span class="fu">sum</span>(n), <span class="dv">2</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb45-187"><a href="#cb45-187" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
-<span id="cb45-188"><a href="#cb45-188" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Dataset, y, <span class="at">Frequency =</span> n, Percentage) <span class="sc">|&gt;</span></span>
-<span id="cb45-189"><a href="#cb45-189" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Response distribution in the training and testing sets&quot;</span>)</span>
-<span id="cb45-190"><a href="#cb45-190" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-163"><a href="#cb45-163" aria-hidden="true" tabindex="-1"></a>bank_split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(bank_data, <span class="at">prop =</span> <span class="fl">0.7</span>, <span class="at">strata =</span> y)</span>
+<span id="cb45-164"><a href="#cb45-164" aria-hidden="true" tabindex="-1"></a>bank_train <span class="ot">&lt;-</span> <span class="fu">training</span>(bank_split)</span>
+<span id="cb45-165"><a href="#cb45-165" aria-hidden="true" tabindex="-1"></a>bank_test <span class="ot">&lt;-</span> <span class="fu">testing</span>(bank_split)</span>
+<span id="cb45-166"><a href="#cb45-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-167"><a href="#cb45-167" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(</span>
+<span id="cb45-168"><a href="#cb45-168" aria-hidden="true" tabindex="-1"></a>  <span class="at">Dataset =</span> <span class="fu">c</span>(<span class="st">&quot;Full data&quot;</span>, <span class="st">&quot;Training set&quot;</span>, <span class="st">&quot;Testing set&quot;</span>),</span>
+<span id="cb45-169"><a href="#cb45-169" aria-hidden="true" tabindex="-1"></a>  <span class="at">Observations =</span> <span class="fu">c</span>(<span class="fu">nrow</span>(bank_data), <span class="fu">nrow</span>(bank_train), <span class="fu">nrow</span>(bank_test))</span>
+<span id="cb45-170"><a href="#cb45-170" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb45-171"><a href="#cb45-171" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Dataset sizes after the 70/30 split&quot;</span>)</span>
+<span id="cb45-172"><a href="#cb45-172" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-173"><a href="#cb45-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-176"><a href="#cb45-176" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-177"><a href="#cb45-177" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: split-response-balance</span></span>
+<span id="cb45-178"><a href="#cb45-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-179"><a href="#cb45-179" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(</span>
+<span id="cb45-180"><a href="#cb45-180" aria-hidden="true" tabindex="-1"></a>  bank_train <span class="sc">|&gt;</span> <span class="fu">count</span>(y) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">Dataset =</span> <span class="st">&quot;Training&quot;</span>),</span>
+<span id="cb45-181"><a href="#cb45-181" aria-hidden="true" tabindex="-1"></a>  bank_test <span class="sc">|&gt;</span> <span class="fu">count</span>(y) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">Dataset =</span> <span class="st">&quot;Testing&quot;</span>)</span>
+<span id="cb45-182"><a href="#cb45-182" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb45-183"><a href="#cb45-183" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Dataset) <span class="sc">|&gt;</span></span>
+<span id="cb45-184"><a href="#cb45-184" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Percentage =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n <span class="sc">/</span> <span class="fu">sum</span>(n), <span class="dv">2</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb45-185"><a href="#cb45-185" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb45-186"><a href="#cb45-186" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Dataset, y, <span class="at">Frequency =</span> n, Percentage) <span class="sc">|&gt;</span></span>
+<span id="cb45-187"><a href="#cb45-187" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Response distribution in the training and testing sets&quot;</span>)</span>
+<span id="cb45-188"><a href="#cb45-188" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-189"><a href="#cb45-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-190"><a href="#cb45-190" aria-hidden="true" tabindex="-1"></a><span class="fu">### Five-fold cross-validation</span></span>
 <span id="cb45-191"><a href="#cb45-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-192"><a href="#cb45-192" aria-hidden="true" tabindex="-1"></a><span class="fu">### Five-fold cross-validation</span></span>
+<span id="cb45-192"><a href="#cb45-192" aria-hidden="true" tabindex="-1"></a>Cross-validation uses only the training data. In each fold, a model is trained on four-fifths of the training observations and validated on the remaining fifth. We stratify the folds by <span class="in">`y`</span> to maintain class balance.</span>
 <span id="cb45-193"><a href="#cb45-193" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-194"><a href="#cb45-194" aria-hidden="true" tabindex="-1"></a>Cross-validation uses only the training data. In each fold, a model is trained on four-fifths of the training observations and validated on the remaining fifth. We stratify the folds by <span class="in">`y`</span> to maintain class balance.</span>
-<span id="cb45-195"><a href="#cb45-195" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-198"><a href="#cb45-198" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-199"><a href="#cb45-199" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cross-validation</span></span>
-<span id="cb45-200"><a href="#cb45-200" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-201"><a href="#cb45-201" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
-<span id="cb45-202"><a href="#cb45-202" aria-hidden="true" tabindex="-1"></a>bank_folds <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(bank_train, <span class="at">v =</span> <span class="dv">5</span>, <span class="at">strata =</span> y)</span>
-<span id="cb45-203"><a href="#cb45-203" aria-hidden="true" tabindex="-1"></a>bank_folds</span>
-<span id="cb45-204"><a href="#cb45-204" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-196"><a href="#cb45-196" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-197"><a href="#cb45-197" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: cross-validation</span></span>
+<span id="cb45-198"><a href="#cb45-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-199"><a href="#cb45-199" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
+<span id="cb45-200"><a href="#cb45-200" aria-hidden="true" tabindex="-1"></a>bank_folds <span class="ot">&lt;-</span> <span class="fu">vfold_cv</span>(bank_train, <span class="at">v =</span> <span class="dv">5</span>, <span class="at">strata =</span> y)</span>
+<span id="cb45-201"><a href="#cb45-201" aria-hidden="true" tabindex="-1"></a>bank_folds</span>
+<span id="cb45-202"><a href="#cb45-202" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-203"><a href="#cb45-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-204"><a href="#cb45-204" aria-hidden="true" tabindex="-1"></a><span class="fu">### Preprocessing recipe</span></span>
 <span id="cb45-205"><a href="#cb45-205" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-206"><a href="#cb45-206" aria-hidden="true" tabindex="-1"></a><span class="fu">### Preprocessing recipe</span></span>
+<span id="cb45-206"><a href="#cb45-206" aria-hidden="true" tabindex="-1"></a>The classification tree and random forest will use the same predictors. The recipe accounts for previously unseen categorical levels and removes predictors with zero variance.</span>
 <span id="cb45-207"><a href="#cb45-207" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-208"><a href="#cb45-208" aria-hidden="true" tabindex="-1"></a>Both models will use the same predictors. The recipe accounts for previously unseen categorical levels and removes predictors with zero variance. We do not normalize numeric variables or create dummy variables because our planned tree and random forest models can work directly with numeric and factor predictors.</span>
-<span id="cb45-209"><a href="#cb45-209" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-212"><a href="#cb45-212" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-213"><a href="#cb45-213" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: modeling-recipe</span></span>
-<span id="cb45-214"><a href="#cb45-214" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-215"><a href="#cb45-215" aria-hidden="true" tabindex="-1"></a>bank_recipe <span class="ot">&lt;-</span> <span class="fu">recipe</span>(y <span class="sc">~</span> ., <span class="at">data =</span> bank_train) <span class="sc">|&gt;</span></span>
-<span id="cb45-216"><a href="#cb45-216" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_novel</span>(<span class="fu">all_nominal_predictors</span>()) <span class="sc">|&gt;</span></span>
-<span id="cb45-217"><a href="#cb45-217" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_zv</span>(<span class="fu">all_predictors</span>())</span>
-<span id="cb45-218"><a href="#cb45-218" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-219"><a href="#cb45-219" aria-hidden="true" tabindex="-1"></a>bank_recipe</span>
-<span id="cb45-220"><a href="#cb45-220" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-210"><a href="#cb45-210" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-211"><a href="#cb45-211" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: modeling-recipe</span></span>
+<span id="cb45-212"><a href="#cb45-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-213"><a href="#cb45-213" aria-hidden="true" tabindex="-1"></a>bank_recipe <span class="ot">&lt;-</span> <span class="fu">recipe</span>(y <span class="sc">~</span> ., <span class="at">data =</span> bank_train) <span class="sc">|&gt;</span></span>
+<span id="cb45-214"><a href="#cb45-214" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_novel</span>(<span class="fu">all_nominal_predictors</span>()) <span class="sc">|&gt;</span></span>
+<span id="cb45-215"><a href="#cb45-215" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_zv</span>(<span class="fu">all_predictors</span>())</span>
+<span id="cb45-216"><a href="#cb45-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-217"><a href="#cb45-217" aria-hidden="true" tabindex="-1"></a>bank_recipe</span>
+<span id="cb45-218"><a href="#cb45-218" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-219"><a href="#cb45-219" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-220"><a href="#cb45-220" aria-hidden="true" tabindex="-1"></a><span class="fu">## Classification Tree Model</span></span>
 <span id="cb45-221"><a href="#cb45-221" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-222"><a href="#cb45-222" aria-hidden="true" tabindex="-1"></a><span class="fu">## Classification Tree Model</span></span>
+<span id="cb45-222"><a href="#cb45-222" aria-hidden="true" tabindex="-1"></a><span class="fu">### Model specification and tuning grid</span></span>
 <span id="cb45-223"><a href="#cb45-223" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-224"><a href="#cb45-224" aria-hidden="true" tabindex="-1"></a><span class="fu">### Model specification and tuning grid</span></span>
+<span id="cb45-224"><a href="#cb45-224" aria-hidden="true" tabindex="-1"></a>A classification tree predicts term deposit subscription by repeatedly splitting customers into groups based on predictor values. We tune three parameters. The <span class="in">`cost_complexity`</span> parameter controls pruning and <span class="in">`tree_depth`</span> limits the maximum depth of the tree. The <span class="in">`min_n`</span> parameter controls the minimum number of observations needed to attempt a split.</span>
 <span id="cb45-225"><a href="#cb45-225" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-226"><a href="#cb45-226" aria-hidden="true" tabindex="-1"></a>A classification tree predicts term deposit subscription by repeatedly splitting customers into groups based on predictor values. We tune three parameters: <span class="in">`cost_complexity`</span> controls pruning, <span class="in">`tree_depth`</span> limits the number of splits along a path, and <span class="in">`min_n`</span> controls the minimum number of observations needed to attempt a split.</span>
-<span id="cb45-227"><a href="#cb45-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-230"><a href="#cb45-230" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-231"><a href="#cb45-231" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: tree-specification</span></span>
-<span id="cb45-232"><a href="#cb45-232" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-233"><a href="#cb45-233" aria-hidden="true" tabindex="-1"></a><span class="co"># Classification tree model</span></span>
-<span id="cb45-234"><a href="#cb45-234" aria-hidden="true" tabindex="-1"></a>tree_spec <span class="ot">&lt;-</span> <span class="fu">decision_tree</span>(</span>
-<span id="cb45-235"><a href="#cb45-235" aria-hidden="true" tabindex="-1"></a>  <span class="at">cost_complexity =</span> <span class="fu">tune</span>(),</span>
-<span id="cb45-236"><a href="#cb45-236" aria-hidden="true" tabindex="-1"></a>  <span class="at">tree_depth =</span> <span class="fu">tune</span>(),</span>
-<span id="cb45-237"><a href="#cb45-237" aria-hidden="true" tabindex="-1"></a>  <span class="at">min_n =</span> <span class="fu">tune</span>()</span>
-<span id="cb45-238"><a href="#cb45-238" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb45-239"><a href="#cb45-239" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">&quot;rpart&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb45-240"><a href="#cb45-240" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">&quot;classification&quot;</span>)</span>
-<span id="cb45-241"><a href="#cb45-241" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-242"><a href="#cb45-242" aria-hidden="true" tabindex="-1"></a><span class="co"># Workflow with preprocessing recipe</span></span>
-<span id="cb45-243"><a href="#cb45-243" aria-hidden="true" tabindex="-1"></a>tree_wf <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
-<span id="cb45-244"><a href="#cb45-244" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(bank_recipe) <span class="sc">|&gt;</span></span>
-<span id="cb45-245"><a href="#cb45-245" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(tree_spec)</span>
-<span id="cb45-246"><a href="#cb45-246" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-247"><a href="#cb45-247" aria-hidden="true" tabindex="-1"></a><span class="co"># Custom grid: 3 x 3 x 3 = 27 combinations</span></span>
-<span id="cb45-248"><a href="#cb45-248" aria-hidden="true" tabindex="-1"></a>tree_grid <span class="ot">&lt;-</span> <span class="fu">grid_regular</span>(</span>
-<span id="cb45-249"><a href="#cb45-249" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cost_complexity</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">4</span>, <span class="sc">-</span><span class="dv">1</span>)),</span>
-<span id="cb45-250"><a href="#cb45-250" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tree_depth</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>L, <span class="dv">12</span>L)),</span>
-<span id="cb45-251"><a href="#cb45-251" aria-hidden="true" tabindex="-1"></a>  <span class="fu">min_n</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">5</span>L, <span class="dv">30</span>L)),</span>
-<span id="cb45-252"><a href="#cb45-252" aria-hidden="true" tabindex="-1"></a>  <span class="at">levels =</span> <span class="dv">3</span></span>
-<span id="cb45-253"><a href="#cb45-253" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb45-254"><a href="#cb45-254" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-255"><a href="#cb45-255" aria-hidden="true" tabindex="-1"></a>tree_grid</span>
-<span id="cb45-256"><a href="#cb45-256" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-228"><a href="#cb45-228" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-229"><a href="#cb45-229" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: tree-specification</span></span>
+<span id="cb45-230"><a href="#cb45-230" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-231"><a href="#cb45-231" aria-hidden="true" tabindex="-1"></a><span class="co"># Classification tree model</span></span>
+<span id="cb45-232"><a href="#cb45-232" aria-hidden="true" tabindex="-1"></a>tree_spec <span class="ot">&lt;-</span> <span class="fu">decision_tree</span>(</span>
+<span id="cb45-233"><a href="#cb45-233" aria-hidden="true" tabindex="-1"></a>  <span class="at">cost_complexity =</span> <span class="fu">tune</span>(),</span>
+<span id="cb45-234"><a href="#cb45-234" aria-hidden="true" tabindex="-1"></a>  <span class="at">tree_depth =</span> <span class="fu">tune</span>(),</span>
+<span id="cb45-235"><a href="#cb45-235" aria-hidden="true" tabindex="-1"></a>  <span class="at">min_n =</span> <span class="fu">tune</span>()</span>
+<span id="cb45-236"><a href="#cb45-236" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb45-237"><a href="#cb45-237" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">&quot;rpart&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb45-238"><a href="#cb45-238" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">&quot;classification&quot;</span>)</span>
+<span id="cb45-239"><a href="#cb45-239" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-240"><a href="#cb45-240" aria-hidden="true" tabindex="-1"></a><span class="co"># Workflow with preprocessing recipe</span></span>
+<span id="cb45-241"><a href="#cb45-241" aria-hidden="true" tabindex="-1"></a>tree_wf <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb45-242"><a href="#cb45-242" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(bank_recipe) <span class="sc">|&gt;</span></span>
+<span id="cb45-243"><a href="#cb45-243" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(tree_spec)</span>
+<span id="cb45-244"><a href="#cb45-244" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-245"><a href="#cb45-245" aria-hidden="true" tabindex="-1"></a><span class="co"># Custom grid: 3 x 3 x 3 = 27 combinations</span></span>
+<span id="cb45-246"><a href="#cb45-246" aria-hidden="true" tabindex="-1"></a>tree_grid <span class="ot">&lt;-</span> <span class="fu">grid_regular</span>(</span>
+<span id="cb45-247"><a href="#cb45-247" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cost_complexity</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">4</span>, <span class="sc">-</span><span class="dv">1</span>)),</span>
+<span id="cb45-248"><a href="#cb45-248" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tree_depth</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">2</span>L, <span class="dv">12</span>L)),</span>
+<span id="cb45-249"><a href="#cb45-249" aria-hidden="true" tabindex="-1"></a>  <span class="fu">min_n</span>(<span class="at">range =</span> <span class="fu">c</span>(<span class="dv">5</span>L, <span class="dv">30</span>L)),</span>
+<span id="cb45-250"><a href="#cb45-250" aria-hidden="true" tabindex="-1"></a>  <span class="at">levels =</span> <span class="dv">3</span></span>
+<span id="cb45-251"><a href="#cb45-251" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-252"><a href="#cb45-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-253"><a href="#cb45-253" aria-hidden="true" tabindex="-1"></a>tree_grid</span>
+<span id="cb45-254"><a href="#cb45-254" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-255"><a href="#cb45-255" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-256"><a href="#cb45-256" aria-hidden="true" tabindex="-1"></a><span class="fu">### Five-fold cross-validation</span></span>
 <span id="cb45-257"><a href="#cb45-257" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-258"><a href="#cb45-258" aria-hidden="true" tabindex="-1"></a><span class="fu">### Five-fold cross-validation</span></span>
+<span id="cb45-258"><a href="#cb45-258" aria-hidden="true" tabindex="-1"></a>We evaluate the candidate trees using ROC AUC, sensitivity, and specificity. Since <span class="in">`yes`</span> is the first level of <span class="in">`y`</span>, subscription is treated as the event of interest. We select the best tree based on ROC AUC.</span>
 <span id="cb45-259"><a href="#cb45-259" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-260"><a href="#cb45-260" aria-hidden="true" tabindex="-1"></a>We evaluate the candidate trees with ROC AUC, sensitivity, and specificity. Because <span class="in">`yes`</span> is the first level of <span class="in">`y`</span>, these metrics treat subscription as the event of interest. ROC AUC is the primary selection metric because the response classes are imbalanced.</span>
-<span id="cb45-261"><a href="#cb45-261" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-264"><a href="#cb45-264" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-265"><a href="#cb45-265" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: tune-classification-tree</span></span>
+<span id="cb45-262"><a href="#cb45-262" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-263"><a href="#cb45-263" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: tune-classification-tree</span></span>
+<span id="cb45-264"><a href="#cb45-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-265"><a href="#cb45-265" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
 <span id="cb45-266"><a href="#cb45-266" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-267"><a href="#cb45-267" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
-<span id="cb45-268"><a href="#cb45-268" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-269"><a href="#cb45-269" aria-hidden="true" tabindex="-1"></a>tree_tune <span class="ot">&lt;-</span> <span class="fu">tune_grid</span>(</span>
-<span id="cb45-270"><a href="#cb45-270" aria-hidden="true" tabindex="-1"></a>  tree_wf,</span>
-<span id="cb45-271"><a href="#cb45-271" aria-hidden="true" tabindex="-1"></a>  <span class="at">resamples =</span> bank_folds,</span>
-<span id="cb45-272"><a href="#cb45-272" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid =</span> tree_grid,</span>
-<span id="cb45-273"><a href="#cb45-273" aria-hidden="true" tabindex="-1"></a>  <span class="at">metrics =</span> <span class="fu">metric_set</span>(roc_auc, sens, spec)</span>
-<span id="cb45-274"><a href="#cb45-274" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb45-275"><a href="#cb45-275" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-276"><a href="#cb45-276" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_metrics</span>(tree_tune) <span class="sc">|&gt;</span></span>
-<span id="cb45-277"><a href="#cb45-277" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(.metric <span class="sc">==</span> <span class="st">&quot;roc_auc&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb45-278"><a href="#cb45-278" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(mean)) <span class="sc">|&gt;</span></span>
-<span id="cb45-279"><a href="#cb45-279" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(cost_complexity, tree_depth, min_n, mean, std_err) <span class="sc">|&gt;</span></span>
-<span id="cb45-280"><a href="#cb45-280" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">10</span>) <span class="sc">|&gt;</span></span>
-<span id="cb45-281"><a href="#cb45-281" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(</span>
-<span id="cb45-282"><a href="#cb45-282" aria-hidden="true" tabindex="-1"></a>    <span class="at">digits =</span> <span class="dv">4</span>,</span>
-<span id="cb45-283"><a href="#cb45-283" aria-hidden="true" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Top 10 classification trees by cross-validated ROC AUC&quot;</span></span>
-<span id="cb45-284"><a href="#cb45-284" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb45-285"><a href="#cb45-285" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-267"><a href="#cb45-267" aria-hidden="true" tabindex="-1"></a>tree_tune <span class="ot">&lt;-</span> <span class="fu">tune_grid</span>(</span>
+<span id="cb45-268"><a href="#cb45-268" aria-hidden="true" tabindex="-1"></a>  tree_wf,</span>
+<span id="cb45-269"><a href="#cb45-269" aria-hidden="true" tabindex="-1"></a>  <span class="at">resamples =</span> bank_folds,</span>
+<span id="cb45-270"><a href="#cb45-270" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid =</span> tree_grid,</span>
+<span id="cb45-271"><a href="#cb45-271" aria-hidden="true" tabindex="-1"></a>  <span class="at">metrics =</span> <span class="fu">metric_set</span>(roc_auc, sens, spec)</span>
+<span id="cb45-272"><a href="#cb45-272" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-273"><a href="#cb45-273" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-274"><a href="#cb45-274" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_metrics</span>(tree_tune) <span class="sc">|&gt;</span></span>
+<span id="cb45-275"><a href="#cb45-275" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(.metric <span class="sc">==</span> <span class="st">&quot;roc_auc&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb45-276"><a href="#cb45-276" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(mean)) <span class="sc">|&gt;</span></span>
+<span id="cb45-277"><a href="#cb45-277" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(cost_complexity, tree_depth, min_n, mean, std_err) <span class="sc">|&gt;</span></span>
+<span id="cb45-278"><a href="#cb45-278" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">10</span>) <span class="sc">|&gt;</span></span>
+<span id="cb45-279"><a href="#cb45-279" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(</span>
+<span id="cb45-280"><a href="#cb45-280" aria-hidden="true" tabindex="-1"></a>    <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb45-281"><a href="#cb45-281" aria-hidden="true" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Top 10 classification trees by cross-validated ROC AUC&quot;</span></span>
+<span id="cb45-282"><a href="#cb45-282" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb45-283"><a href="#cb45-283" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-284"><a href="#cb45-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-285"><a href="#cb45-285" aria-hidden="true" tabindex="-1"></a><span class="fu">### Select the best tree</span></span>
 <span id="cb45-286"><a href="#cb45-286" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-287"><a href="#cb45-287" aria-hidden="true" tabindex="-1"></a><span class="fu">### Select the best tree</span></span>
-<span id="cb45-288"><a href="#cb45-288" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-291"><a href="#cb45-291" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-292"><a href="#cb45-292" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: best-classification-tree</span></span>
-<span id="cb45-293"><a href="#cb45-293" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-294"><a href="#cb45-294" aria-hidden="true" tabindex="-1"></a>best_tree <span class="ot">&lt;-</span> <span class="fu">select_best</span>(tree_tune, <span class="at">metric =</span> <span class="st">&quot;roc_auc&quot;</span>)</span>
-<span id="cb45-295"><a href="#cb45-295" aria-hidden="true" tabindex="-1"></a>best_tree</span>
+<span id="cb45-289"><a href="#cb45-289" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-290"><a href="#cb45-290" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: best-classification-tree</span></span>
+<span id="cb45-291"><a href="#cb45-291" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-292"><a href="#cb45-292" aria-hidden="true" tabindex="-1"></a>best_tree <span class="ot">&lt;-</span> <span class="fu">select_best</span>(tree_tune, <span class="at">metric =</span> <span class="st">&quot;roc_auc&quot;</span>)</span>
+<span id="cb45-293"><a href="#cb45-293" aria-hidden="true" tabindex="-1"></a>best_tree</span>
+<span id="cb45-294"><a href="#cb45-294" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-295"><a href="#cb45-295" aria-hidden="true" tabindex="-1"></a>final_tree_wf <span class="ot">&lt;-</span> <span class="fu">finalize_workflow</span>(tree_wf, best_tree)</span>
 <span id="cb45-296"><a href="#cb45-296" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-297"><a href="#cb45-297" aria-hidden="true" tabindex="-1"></a>final_tree_wf <span class="ot">&lt;-</span> <span class="fu">finalize_workflow</span>(tree_wf, best_tree)</span>
-<span id="cb45-298"><a href="#cb45-298" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-299"><a href="#cb45-299" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit on training data only</span></span>
-<span id="cb45-300"><a href="#cb45-300" aria-hidden="true" tabindex="-1"></a>final_tree_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(final_tree_wf, <span class="at">data =</span> bank_train)</span>
-<span id="cb45-301"><a href="#cb45-301" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-302"><a href="#cb45-302" aria-hidden="true" tabindex="-1"></a><span class="fu">show_best</span>(tree_tune, <span class="at">metric =</span> <span class="st">&quot;roc_auc&quot;</span>, <span class="at">n =</span> <span class="dv">1</span>) <span class="sc">|&gt;</span></span>
-<span id="cb45-303"><a href="#cb45-303" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(</span>
-<span id="cb45-304"><a href="#cb45-304" aria-hidden="true" tabindex="-1"></a>    <span class="at">digits =</span> <span class="dv">4</span>,</span>
-<span id="cb45-305"><a href="#cb45-305" aria-hidden="true" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Best cross-validated classification tree&quot;</span></span>
-<span id="cb45-306"><a href="#cb45-306" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb45-307"><a href="#cb45-307" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-297"><a href="#cb45-297" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit on training data only</span></span>
+<span id="cb45-298"><a href="#cb45-298" aria-hidden="true" tabindex="-1"></a>final_tree_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(final_tree_wf, <span class="at">data =</span> bank_train)</span>
+<span id="cb45-299"><a href="#cb45-299" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-300"><a href="#cb45-300" aria-hidden="true" tabindex="-1"></a><span class="fu">show_best</span>(tree_tune, <span class="at">metric =</span> <span class="st">&quot;roc_auc&quot;</span>, <span class="at">n =</span> <span class="dv">1</span>) <span class="sc">|&gt;</span></span>
+<span id="cb45-301"><a href="#cb45-301" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(</span>
+<span id="cb45-302"><a href="#cb45-302" aria-hidden="true" tabindex="-1"></a>    <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb45-303"><a href="#cb45-303" aria-hidden="true" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Best cross-validated classification tree&quot;</span></span>
+<span id="cb45-304"><a href="#cb45-304" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb45-305"><a href="#cb45-305" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-306"><a href="#cb45-306" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-307"><a href="#cb45-307" aria-hidden="true" tabindex="-1"></a>The table above reports the best tree&#39;s cross-validated ROC AUC and tuning parameters. A higher ROC AUC indicates better discrimination between subscribers and non-subscribers across classification thresholds.</span>
 <span id="cb45-308"><a href="#cb45-308" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-309"><a href="#cb45-309" aria-hidden="true" tabindex="-1"></a>The table above reports the best tree&#39;s cross-validated ROC AUC and tuning parameters. A higher ROC AUC indicates better discrimination between subscribers and non-subscribers across classification thresholds.</span>
+<span id="cb45-309"><a href="#cb45-309" aria-hidden="true" tabindex="-1"></a><span class="fu">## Random Forest Model</span></span>
 <span id="cb45-310"><a href="#cb45-310" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-311"><a href="#cb45-311" aria-hidden="true" tabindex="-1"></a><span class="fu">## Random Forest Model</span></span>
+<span id="cb45-311"><a href="#cb45-311" aria-hidden="true" tabindex="-1"></a><span class="fu">### Model specification and tuning grid</span></span>
 <span id="cb45-312"><a href="#cb45-312" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-313"><a href="#cb45-313" aria-hidden="true" tabindex="-1"></a><span class="fu">### Model specification and tuning grid</span></span>
+<span id="cb45-313"><a href="#cb45-313" aria-hidden="true" tabindex="-1"></a>A random forest combines many classification trees trained on bootstrap samples. At each split, a random subset of predictors is considered. This reduces correlation among trees and can reduce variance relative to a single tree. We tune <span class="in">`mtry`</span> which determines the number of candidate predictors considered at each split. We fix <span class="in">`trees`</span> at 500 and <span class="in">`min_n`</span> at 10.</span>
 <span id="cb45-314"><a href="#cb45-314" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-315"><a href="#cb45-315" aria-hidden="true" tabindex="-1"></a>A random forest combines many classification trees trained on bootstrap samples. At each split, a random subset of predictors is considered. This reduces correlation among trees and can reduce variance relative to a single tree. We tune <span class="in">`mtry`</span>, the number of candidate predictors considered at each split, while fixing <span class="in">`trees`</span> at 500 and <span class="in">`min_n`</span> at 10.</span>
-<span id="cb45-316"><a href="#cb45-316" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-319"><a href="#cb45-319" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-320"><a href="#cb45-320" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: forest-specification</span></span>
-<span id="cb45-321"><a href="#cb45-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-322"><a href="#cb45-322" aria-hidden="true" tabindex="-1"></a>rf_spec <span class="ot">&lt;-</span> <span class="fu">rand_forest</span>(</span>
-<span id="cb45-323"><a href="#cb45-323" aria-hidden="true" tabindex="-1"></a>  <span class="at">mtry =</span> <span class="fu">tune</span>(),</span>
-<span id="cb45-324"><a href="#cb45-324" aria-hidden="true" tabindex="-1"></a>  <span class="at">trees =</span> <span class="dv">500</span>,</span>
-<span id="cb45-325"><a href="#cb45-325" aria-hidden="true" tabindex="-1"></a>  <span class="at">min_n =</span> <span class="dv">10</span></span>
-<span id="cb45-326"><a href="#cb45-326" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb45-327"><a href="#cb45-327" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">&quot;ranger&quot;</span>, <span class="at">num.threads =</span> <span class="dv">2</span>) <span class="sc">|&gt;</span></span>
-<span id="cb45-328"><a href="#cb45-328" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">&quot;classification&quot;</span>)</span>
-<span id="cb45-329"><a href="#cb45-329" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-330"><a href="#cb45-330" aria-hidden="true" tabindex="-1"></a>rf_wf <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
-<span id="cb45-331"><a href="#cb45-331" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(bank_recipe) <span class="sc">|&gt;</span></span>
-<span id="cb45-332"><a href="#cb45-332" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(rf_spec)</span>
-<span id="cb45-333"><a href="#cb45-333" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-334"><a href="#cb45-334" aria-hidden="true" tabindex="-1"></a>rf_grid <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb45-335"><a href="#cb45-335" aria-hidden="true" tabindex="-1"></a>  <span class="at">mtry =</span> <span class="fu">c</span>(<span class="dv">2</span>L, <span class="dv">4</span>L, <span class="dv">8</span>L, <span class="dv">12</span>L, <span class="dv">16</span>L)</span>
-<span id="cb45-336"><a href="#cb45-336" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb45-337"><a href="#cb45-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-338"><a href="#cb45-338" aria-hidden="true" tabindex="-1"></a>rf_grid</span>
-<span id="cb45-339"><a href="#cb45-339" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-317"><a href="#cb45-317" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-318"><a href="#cb45-318" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: forest-specification</span></span>
+<span id="cb45-319"><a href="#cb45-319" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-320"><a href="#cb45-320" aria-hidden="true" tabindex="-1"></a>rf_spec <span class="ot">&lt;-</span> <span class="fu">rand_forest</span>(</span>
+<span id="cb45-321"><a href="#cb45-321" aria-hidden="true" tabindex="-1"></a>  <span class="at">mtry =</span> <span class="fu">tune</span>(),</span>
+<span id="cb45-322"><a href="#cb45-322" aria-hidden="true" tabindex="-1"></a>  <span class="at">trees =</span> <span class="dv">500</span>,</span>
+<span id="cb45-323"><a href="#cb45-323" aria-hidden="true" tabindex="-1"></a>  <span class="at">min_n =</span> <span class="dv">10</span></span>
+<span id="cb45-324"><a href="#cb45-324" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb45-325"><a href="#cb45-325" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">&quot;ranger&quot;</span>, <span class="at">num.threads =</span> <span class="dv">2</span>) <span class="sc">|&gt;</span></span>
+<span id="cb45-326"><a href="#cb45-326" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">&quot;classification&quot;</span>)</span>
+<span id="cb45-327"><a href="#cb45-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-328"><a href="#cb45-328" aria-hidden="true" tabindex="-1"></a>rf_wf <span class="ot">&lt;-</span> <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb45-329"><a href="#cb45-329" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(bank_recipe) <span class="sc">|&gt;</span></span>
+<span id="cb45-330"><a href="#cb45-330" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(rf_spec)</span>
+<span id="cb45-331"><a href="#cb45-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-332"><a href="#cb45-332" aria-hidden="true" tabindex="-1"></a>rf_grid <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb45-333"><a href="#cb45-333" aria-hidden="true" tabindex="-1"></a>  <span class="at">mtry =</span> <span class="fu">c</span>(<span class="dv">2</span>L, <span class="dv">4</span>L, <span class="dv">8</span>L, <span class="dv">12</span>L, <span class="dv">16</span>L)</span>
+<span id="cb45-334"><a href="#cb45-334" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-335"><a href="#cb45-335" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-336"><a href="#cb45-336" aria-hidden="true" tabindex="-1"></a>rf_grid</span>
+<span id="cb45-337"><a href="#cb45-337" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-338"><a href="#cb45-338" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-339"><a href="#cb45-339" aria-hidden="true" tabindex="-1"></a><span class="fu">### Five-fold cross-validation</span></span>
 <span id="cb45-340"><a href="#cb45-340" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-341"><a href="#cb45-341" aria-hidden="true" tabindex="-1"></a><span class="fu">### Five-fold cross-validation</span></span>
+<span id="cb45-341"><a href="#cb45-341" aria-hidden="true" tabindex="-1"></a>We use the same folds and evaluation metrics as the classification tree so that the cross-validation results are comparable.</span>
 <span id="cb45-342"><a href="#cb45-342" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-343"><a href="#cb45-343" aria-hidden="true" tabindex="-1"></a>We use the same folds and evaluation metrics as the classification tree so that the cross-validation results are comparable.</span>
-<span id="cb45-344"><a href="#cb45-344" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-347"><a href="#cb45-347" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-348"><a href="#cb45-348" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: tune-random-forest</span></span>
+<span id="cb45-345"><a href="#cb45-345" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-346"><a href="#cb45-346" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: tune-random-forest</span></span>
+<span id="cb45-347"><a href="#cb45-347" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-348"><a href="#cb45-348" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
 <span id="cb45-349"><a href="#cb45-349" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-350"><a href="#cb45-350" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
-<span id="cb45-351"><a href="#cb45-351" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-352"><a href="#cb45-352" aria-hidden="true" tabindex="-1"></a>rf_tune <span class="ot">&lt;-</span> <span class="fu">tune_grid</span>(</span>
-<span id="cb45-353"><a href="#cb45-353" aria-hidden="true" tabindex="-1"></a>  rf_wf,</span>
-<span id="cb45-354"><a href="#cb45-354" aria-hidden="true" tabindex="-1"></a>  <span class="at">resamples =</span> bank_folds,</span>
-<span id="cb45-355"><a href="#cb45-355" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid =</span> rf_grid,</span>
-<span id="cb45-356"><a href="#cb45-356" aria-hidden="true" tabindex="-1"></a>  <span class="at">metrics =</span> <span class="fu">metric_set</span>(roc_auc, sens, spec)</span>
-<span id="cb45-357"><a href="#cb45-357" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb45-358"><a href="#cb45-358" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-359"><a href="#cb45-359" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_metrics</span>(rf_tune) <span class="sc">|&gt;</span></span>
-<span id="cb45-360"><a href="#cb45-360" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(.metric <span class="sc">==</span> <span class="st">&quot;roc_auc&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb45-361"><a href="#cb45-361" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(mean)) <span class="sc">|&gt;</span></span>
-<span id="cb45-362"><a href="#cb45-362" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(mtry, mean, std_err) <span class="sc">|&gt;</span></span>
-<span id="cb45-363"><a href="#cb45-363" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(</span>
-<span id="cb45-364"><a href="#cb45-364" aria-hidden="true" tabindex="-1"></a>    <span class="at">digits =</span> <span class="dv">4</span>,</span>
-<span id="cb45-365"><a href="#cb45-365" aria-hidden="true" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Random forest cross-validation results&quot;</span></span>
-<span id="cb45-366"><a href="#cb45-366" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb45-367"><a href="#cb45-367" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb45-368"><a href="#cb45-368" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-371"><a href="#cb45-371" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-372"><a href="#cb45-372" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: forest-tuning-plot</span></span>
-<span id="cb45-373"><a href="#cb45-373" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-374"><a href="#cb45-374" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_metrics</span>(rf_tune) <span class="sc">|&gt;</span></span>
-<span id="cb45-375"><a href="#cb45-375" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(.metric <span class="sc">==</span> <span class="st">&quot;roc_auc&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb45-376"><a href="#cb45-376" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> mtry, <span class="at">y =</span> mean)) <span class="sc">+</span></span>
-<span id="cb45-377"><a href="#cb45-377" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb45-378"><a href="#cb45-378" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb45-379"><a href="#cb45-379" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_errorbar</span>(</span>
-<span id="cb45-380"><a href="#cb45-380" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(</span>
-<span id="cb45-381"><a href="#cb45-381" aria-hidden="true" tabindex="-1"></a>      <span class="at">ymin =</span> mean <span class="sc">-</span> std_err,</span>
-<span id="cb45-382"><a href="#cb45-382" aria-hidden="true" tabindex="-1"></a>      <span class="at">ymax =</span> mean <span class="sc">+</span> std_err</span>
-<span id="cb45-383"><a href="#cb45-383" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb45-384"><a href="#cb45-384" aria-hidden="true" tabindex="-1"></a>    <span class="at">width =</span> <span class="fl">0.3</span></span>
-<span id="cb45-385"><a href="#cb45-385" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb45-386"><a href="#cb45-386" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> rf_grid<span class="sc">$</span>mtry) <span class="sc">+</span> </span>
-<span id="cb45-387"><a href="#cb45-387" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb45-388"><a href="#cb45-388" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Random Forest Tuning Results&quot;</span>,</span>
-<span id="cb45-389"><a href="#cb45-389" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;mtry&quot;</span>,</span>
-<span id="cb45-390"><a href="#cb45-390" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">&quot;Mean cross-validated ROC AUC&quot;</span></span>
-<span id="cb45-391"><a href="#cb45-391" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb45-392"><a href="#cb45-392" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb45-350"><a href="#cb45-350" aria-hidden="true" tabindex="-1"></a>rf_tune <span class="ot">&lt;-</span> <span class="fu">tune_grid</span>(</span>
+<span id="cb45-351"><a href="#cb45-351" aria-hidden="true" tabindex="-1"></a>  rf_wf,</span>
+<span id="cb45-352"><a href="#cb45-352" aria-hidden="true" tabindex="-1"></a>  <span class="at">resamples =</span> bank_folds,</span>
+<span id="cb45-353"><a href="#cb45-353" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid =</span> rf_grid,</span>
+<span id="cb45-354"><a href="#cb45-354" aria-hidden="true" tabindex="-1"></a>  <span class="at">metrics =</span> <span class="fu">metric_set</span>(roc_auc, sens, spec)</span>
+<span id="cb45-355"><a href="#cb45-355" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-356"><a href="#cb45-356" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-357"><a href="#cb45-357" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_metrics</span>(rf_tune) <span class="sc">|&gt;</span></span>
+<span id="cb45-358"><a href="#cb45-358" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(.metric <span class="sc">==</span> <span class="st">&quot;roc_auc&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb45-359"><a href="#cb45-359" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(mean)) <span class="sc">|&gt;</span></span>
+<span id="cb45-360"><a href="#cb45-360" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(mtry, mean, std_err) <span class="sc">|&gt;</span></span>
+<span id="cb45-361"><a href="#cb45-361" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(</span>
+<span id="cb45-362"><a href="#cb45-362" aria-hidden="true" tabindex="-1"></a>    <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb45-363"><a href="#cb45-363" aria-hidden="true" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Random forest cross-validation results&quot;</span></span>
+<span id="cb45-364"><a href="#cb45-364" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb45-365"><a href="#cb45-365" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-366"><a href="#cb45-366" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-369"><a href="#cb45-369" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-370"><a href="#cb45-370" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: forest-tuning-plot</span></span>
+<span id="cb45-371"><a href="#cb45-371" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-372"><a href="#cb45-372" aria-hidden="true" tabindex="-1"></a><span class="fu">collect_metrics</span>(rf_tune) <span class="sc">|&gt;</span></span>
+<span id="cb45-373"><a href="#cb45-373" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(.metric <span class="sc">==</span> <span class="st">&quot;roc_auc&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb45-374"><a href="#cb45-374" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> mtry, <span class="at">y =</span> mean)) <span class="sc">+</span></span>
+<span id="cb45-375"><a href="#cb45-375" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb45-376"><a href="#cb45-376" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb45-377"><a href="#cb45-377" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_errorbar</span>(</span>
+<span id="cb45-378"><a href="#cb45-378" aria-hidden="true" tabindex="-1"></a>    <span class="fu">aes</span>(</span>
+<span id="cb45-379"><a href="#cb45-379" aria-hidden="true" tabindex="-1"></a>      <span class="at">ymin =</span> mean <span class="sc">-</span> std_err,</span>
+<span id="cb45-380"><a href="#cb45-380" aria-hidden="true" tabindex="-1"></a>      <span class="at">ymax =</span> mean <span class="sc">+</span> std_err</span>
+<span id="cb45-381"><a href="#cb45-381" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb45-382"><a href="#cb45-382" aria-hidden="true" tabindex="-1"></a>    <span class="at">width =</span> <span class="fl">0.3</span></span>
+<span id="cb45-383"><a href="#cb45-383" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb45-384"><a href="#cb45-384" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> rf_grid<span class="sc">$</span>mtry) <span class="sc">+</span> </span>
+<span id="cb45-385"><a href="#cb45-385" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb45-386"><a href="#cb45-386" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;Random Forest Tuning Results&quot;</span>,</span>
+<span id="cb45-387"><a href="#cb45-387" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;mtry&quot;</span>,</span>
+<span id="cb45-388"><a href="#cb45-388" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">&quot;Mean cross-validated ROC AUC&quot;</span></span>
+<span id="cb45-389"><a href="#cb45-389" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb45-390"><a href="#cb45-390" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb45-391"><a href="#cb45-391" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-392"><a href="#cb45-392" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb45-393"><a href="#cb45-393" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-394"><a href="#cb45-394" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-394"><a href="#cb45-394" aria-hidden="true" tabindex="-1"></a><span class="fu">### Select the best random forest</span></span>
 <span id="cb45-395"><a href="#cb45-395" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-396"><a href="#cb45-396" aria-hidden="true" tabindex="-1"></a><span class="fu">### Select the best random forest</span></span>
-<span id="cb45-397"><a href="#cb45-397" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-400"><a href="#cb45-400" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-401"><a href="#cb45-401" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: best-random-forest</span></span>
-<span id="cb45-402"><a href="#cb45-402" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-403"><a href="#cb45-403" aria-hidden="true" tabindex="-1"></a>best_rf <span class="ot">&lt;-</span> <span class="fu">select_best</span>(rf_tune, <span class="at">metric =</span> <span class="st">&quot;roc_auc&quot;</span>)</span>
-<span id="cb45-404"><a href="#cb45-404" aria-hidden="true" tabindex="-1"></a>best_rf</span>
+<span id="cb45-398"><a href="#cb45-398" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-399"><a href="#cb45-399" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: best-random-forest</span></span>
+<span id="cb45-400"><a href="#cb45-400" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-401"><a href="#cb45-401" aria-hidden="true" tabindex="-1"></a>best_rf <span class="ot">&lt;-</span> <span class="fu">select_best</span>(rf_tune, <span class="at">metric =</span> <span class="st">&quot;roc_auc&quot;</span>)</span>
+<span id="cb45-402"><a href="#cb45-402" aria-hidden="true" tabindex="-1"></a>best_rf</span>
+<span id="cb45-403"><a href="#cb45-403" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-404"><a href="#cb45-404" aria-hidden="true" tabindex="-1"></a>final_rf_wf <span class="ot">&lt;-</span> <span class="fu">finalize_workflow</span>(rf_wf, best_rf)</span>
 <span id="cb45-405"><a href="#cb45-405" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-406"><a href="#cb45-406" aria-hidden="true" tabindex="-1"></a>final_rf_wf <span class="ot">&lt;-</span> <span class="fu">finalize_workflow</span>(rf_wf, best_rf)</span>
+<span id="cb45-406"><a href="#cb45-406" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
 <span id="cb45-407"><a href="#cb45-407" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-408"><a href="#cb45-408" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
+<span id="cb45-408"><a href="#cb45-408" aria-hidden="true" tabindex="-1"></a>final_rf_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(final_rf_wf, <span class="at">data =</span> bank_train)</span>
 <span id="cb45-409"><a href="#cb45-409" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-410"><a href="#cb45-410" aria-hidden="true" tabindex="-1"></a>final_rf_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(final_rf_wf, <span class="at">data =</span> bank_train)</span>
-<span id="cb45-411"><a href="#cb45-411" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-412"><a href="#cb45-412" aria-hidden="true" tabindex="-1"></a><span class="fu">show_best</span>(rf_tune, <span class="at">metric =</span> <span class="st">&quot;roc_auc&quot;</span>, <span class="at">n =</span> <span class="dv">1</span>) <span class="sc">|&gt;</span></span>
-<span id="cb45-413"><a href="#cb45-413" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(</span>
-<span id="cb45-414"><a href="#cb45-414" aria-hidden="true" tabindex="-1"></a>    <span class="at">digits =</span> <span class="dv">4</span>,</span>
-<span id="cb45-415"><a href="#cb45-415" aria-hidden="true" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Best cross-validated random forest&quot;</span></span>
-<span id="cb45-416"><a href="#cb45-416" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb45-417"><a href="#cb45-417" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-410"><a href="#cb45-410" aria-hidden="true" tabindex="-1"></a><span class="fu">show_best</span>(rf_tune, <span class="at">metric =</span> <span class="st">&quot;roc_auc&quot;</span>, <span class="at">n =</span> <span class="dv">1</span>) <span class="sc">|&gt;</span></span>
+<span id="cb45-411"><a href="#cb45-411" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(</span>
+<span id="cb45-412"><a href="#cb45-412" aria-hidden="true" tabindex="-1"></a>    <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb45-413"><a href="#cb45-413" aria-hidden="true" tabindex="-1"></a>    <span class="at">caption =</span> <span class="st">&quot;Best cross-validated random forest&quot;</span></span>
+<span id="cb45-414"><a href="#cb45-414" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb45-415"><a href="#cb45-415" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-416"><a href="#cb45-416" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-417"><a href="#cb45-417" aria-hidden="true" tabindex="-1"></a>The selected random forest is fitted to the entire training set. </span>
 <span id="cb45-418"><a href="#cb45-418" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-419"><a href="#cb45-419" aria-hidden="true" tabindex="-1"></a>The selected random forest is fitted to the entire training set. The test set remains unused until the final model comparison.</span>
+<span id="cb45-419"><a href="#cb45-419" aria-hidden="true" tabindex="-1"></a><span class="fu">## Model Comparison and Selection</span></span>
 <span id="cb45-420"><a href="#cb45-420" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-421"><a href="#cb45-421" aria-hidden="true" tabindex="-1"></a><span class="fu">## Model Comparison and Selection</span></span>
+<span id="cb45-421"><a href="#cb45-421" aria-hidden="true" tabindex="-1"></a><span class="fu">### Test-set predictions</span></span>
 <span id="cb45-422"><a href="#cb45-422" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-423"><a href="#cb45-423" aria-hidden="true" tabindex="-1"></a><span class="fu">### Test-set predictions</span></span>
+<span id="cb45-423"><a href="#cb45-423" aria-hidden="true" tabindex="-1"></a>Both tuned models are evaluated on the same held-out test set. We obtain predicted classes and probabilities of subscription.</span>
 <span id="cb45-424"><a href="#cb45-424" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-425"><a href="#cb45-425" aria-hidden="true" tabindex="-1"></a>Both tuned models are evaluated on the same held-out test set. We obtain predicted classes and probabilities of subscription.</span>
-<span id="cb45-426"><a href="#cb45-426" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-429"><a href="#cb45-429" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-430"><a href="#cb45-430" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: test-predictions</span></span>
-<span id="cb45-431"><a href="#cb45-431" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-432"><a href="#cb45-432" aria-hidden="true" tabindex="-1"></a>tree_test_pred <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(</span>
-<span id="cb45-433"><a href="#cb45-433" aria-hidden="true" tabindex="-1"></a>  bank_test <span class="sc">|&gt;</span> <span class="fu">select</span>(y),</span>
-<span id="cb45-434"><a href="#cb45-434" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(final_tree_fit, <span class="at">new_data =</span> bank_test),</span>
-<span id="cb45-435"><a href="#cb45-435" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(final_tree_fit, <span class="at">new_data =</span> bank_test, <span class="at">type =</span> <span class="st">&quot;prob&quot;</span>)</span>
-<span id="cb45-436"><a href="#cb45-436" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb45-437"><a href="#cb45-437" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-438"><a href="#cb45-438" aria-hidden="true" tabindex="-1"></a>rf_test_pred <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(</span>
-<span id="cb45-439"><a href="#cb45-439" aria-hidden="true" tabindex="-1"></a>  bank_test <span class="sc">|&gt;</span> <span class="fu">select</span>(y),</span>
-<span id="cb45-440"><a href="#cb45-440" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(final_rf_fit, <span class="at">new_data =</span> bank_test),</span>
-<span id="cb45-441"><a href="#cb45-441" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(final_rf_fit, <span class="at">new_data =</span> bank_test, <span class="at">type =</span> <span class="st">&quot;prob&quot;</span>)</span>
-<span id="cb45-442"><a href="#cb45-442" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb45-443"><a href="#cb45-443" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-427"><a href="#cb45-427" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-428"><a href="#cb45-428" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: test-predictions</span></span>
+<span id="cb45-429"><a href="#cb45-429" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-430"><a href="#cb45-430" aria-hidden="true" tabindex="-1"></a>tree_test_pred <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(</span>
+<span id="cb45-431"><a href="#cb45-431" aria-hidden="true" tabindex="-1"></a>  bank_test <span class="sc">|&gt;</span> <span class="fu">select</span>(y),</span>
+<span id="cb45-432"><a href="#cb45-432" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(final_tree_fit, <span class="at">new_data =</span> bank_test),</span>
+<span id="cb45-433"><a href="#cb45-433" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(final_tree_fit, <span class="at">new_data =</span> bank_test, <span class="at">type =</span> <span class="st">&quot;prob&quot;</span>)</span>
+<span id="cb45-434"><a href="#cb45-434" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-435"><a href="#cb45-435" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-436"><a href="#cb45-436" aria-hidden="true" tabindex="-1"></a>rf_test_pred <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(</span>
+<span id="cb45-437"><a href="#cb45-437" aria-hidden="true" tabindex="-1"></a>  bank_test <span class="sc">|&gt;</span> <span class="fu">select</span>(y),</span>
+<span id="cb45-438"><a href="#cb45-438" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(final_rf_fit, <span class="at">new_data =</span> bank_test),</span>
+<span id="cb45-439"><a href="#cb45-439" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>(final_rf_fit, <span class="at">new_data =</span> bank_test, <span class="at">type =</span> <span class="st">&quot;prob&quot;</span>)</span>
+<span id="cb45-440"><a href="#cb45-440" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-441"><a href="#cb45-441" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-442"><a href="#cb45-442" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-443"><a href="#cb45-443" aria-hidden="true" tabindex="-1"></a><span class="fu">### Compare test-set performance</span></span>
 <span id="cb45-444"><a href="#cb45-444" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-445"><a href="#cb45-445" aria-hidden="true" tabindex="-1"></a><span class="fu">### Compare test-set performance</span></span>
+<span id="cb45-445"><a href="#cb45-445" aria-hidden="true" tabindex="-1"></a>ROC AUC measures discrimination across classification thresholds. Sensitivity measures the proportion of actual subscribers correctly classified while specificity measures the proportion of actual non-subscribers correctly classified.</span>
 <span id="cb45-446"><a href="#cb45-446" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-447"><a href="#cb45-447" aria-hidden="true" tabindex="-1"></a>ROC AUC measures discrimination across classification thresholds. Sensitivity measures the proportion of actual subscribers correctly classified while specificity measures the proportion of actual non-subscribers correctly classified.</span>
-<span id="cb45-448"><a href="#cb45-448" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-451"><a href="#cb45-451" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-452"><a href="#cb45-452" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: test-metrics</span></span>
+<span id="cb45-449"><a href="#cb45-449" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-450"><a href="#cb45-450" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: test-metrics</span></span>
+<span id="cb45-451"><a href="#cb45-451" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-452"><a href="#cb45-452" aria-hidden="true" tabindex="-1"></a>test_metrics <span class="ot">&lt;-</span> <span class="fu">metric_set</span>(roc_auc, sens, spec)</span>
 <span id="cb45-453"><a href="#cb45-453" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-454"><a href="#cb45-454" aria-hidden="true" tabindex="-1"></a>test_metrics <span class="ot">&lt;-</span> <span class="fu">metric_set</span>(roc_auc, sens, spec)</span>
-<span id="cb45-455"><a href="#cb45-455" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-456"><a href="#cb45-456" aria-hidden="true" tabindex="-1"></a>model_comparison <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb45-457"><a href="#cb45-457" aria-hidden="true" tabindex="-1"></a>  <span class="fu">test_metrics</span>(tree_test_pred, <span class="at">truth =</span> y, <span class="at">estimate =</span> .pred_class, .pred_yes) <span class="sc">|&gt;</span></span>
-<span id="cb45-458"><a href="#cb45-458" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Model =</span> <span class="st">&quot;Classification Tree&quot;</span>),</span>
-<span id="cb45-459"><a href="#cb45-459" aria-hidden="true" tabindex="-1"></a>  <span class="fu">test_metrics</span>(rf_test_pred, <span class="at">truth =</span> y, <span class="at">estimate =</span> .pred_class, .pred_yes) <span class="sc">|&gt;</span></span>
-<span id="cb45-460"><a href="#cb45-460" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Model =</span> <span class="st">&quot;Random Forest&quot;</span>)</span>
-<span id="cb45-461"><a href="#cb45-461" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb45-462"><a href="#cb45-462" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Model, .metric, .estimate) <span class="sc">|&gt;</span></span>
-<span id="cb45-463"><a href="#cb45-463" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> .metric, <span class="at">values_from =</span> .estimate) <span class="sc">|&gt;</span></span>
-<span id="cb45-464"><a href="#cb45-464" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(roc_auc))</span>
-<span id="cb45-465"><a href="#cb45-465" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-466"><a href="#cb45-466" aria-hidden="true" tabindex="-1"></a>model_comparison <span class="sc">|&gt;</span></span>
-<span id="cb45-467"><a href="#cb45-467" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Held-out test-set model performance&quot;</span>)</span>
-<span id="cb45-468"><a href="#cb45-468" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb45-469"><a href="#cb45-469" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-472"><a href="#cb45-472" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-473"><a href="#cb45-473" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: test-roc-plot</span></span>
-<span id="cb45-474"><a href="#cb45-474" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-475"><a href="#cb45-475" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(</span>
-<span id="cb45-476"><a href="#cb45-476" aria-hidden="true" tabindex="-1"></a>  <span class="fu">roc_curve</span>(tree_test_pred, <span class="at">truth =</span> y, .pred_yes) <span class="sc">|&gt;</span></span>
-<span id="cb45-477"><a href="#cb45-477" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Model =</span> <span class="st">&quot;Classification Tree&quot;</span>),</span>
-<span id="cb45-478"><a href="#cb45-478" aria-hidden="true" tabindex="-1"></a>  <span class="fu">roc_curve</span>(rf_test_pred, <span class="at">truth =</span> y, .pred_yes) <span class="sc">|&gt;</span></span>
-<span id="cb45-479"><a href="#cb45-479" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Model =</span> <span class="st">&quot;Random Forest&quot;</span>)</span>
-<span id="cb45-480"><a href="#cb45-480" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb45-481"><a href="#cb45-481" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">1</span> <span class="sc">-</span> specificity, <span class="at">y =</span> sensitivity, <span class="at">color =</span> Model)) <span class="sc">+</span></span>
-<span id="cb45-482"><a href="#cb45-482" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_path</span>(<span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
-<span id="cb45-483"><a href="#cb45-483" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>, <span class="at">color =</span> <span class="st">&quot;gray80&quot;</span>) <span class="sc">+</span></span>
-<span id="cb45-484"><a href="#cb45-484" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_equal</span>() <span class="sc">+</span></span>
-<span id="cb45-485"><a href="#cb45-485" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
-<span id="cb45-486"><a href="#cb45-486" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;ROC Curves on the Test Set&quot;</span>,</span>
-<span id="cb45-487"><a href="#cb45-487" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;False positive rate&quot;</span>,</span>
-<span id="cb45-488"><a href="#cb45-488" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">&quot;True positive rate&quot;</span></span>
-<span id="cb45-489"><a href="#cb45-489" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
-<span id="cb45-490"><a href="#cb45-490" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
-<span id="cb45-491"><a href="#cb45-491" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-454"><a href="#cb45-454" aria-hidden="true" tabindex="-1"></a>model_comparison <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
+<span id="cb45-455"><a href="#cb45-455" aria-hidden="true" tabindex="-1"></a>  <span class="fu">test_metrics</span>(tree_test_pred, <span class="at">truth =</span> y, <span class="at">estimate =</span> .pred_class, .pred_yes) <span class="sc">|&gt;</span></span>
+<span id="cb45-456"><a href="#cb45-456" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Model =</span> <span class="st">&quot;Classification Tree&quot;</span>),</span>
+<span id="cb45-457"><a href="#cb45-457" aria-hidden="true" tabindex="-1"></a>  <span class="fu">test_metrics</span>(rf_test_pred, <span class="at">truth =</span> y, <span class="at">estimate =</span> .pred_class, .pred_yes) <span class="sc">|&gt;</span></span>
+<span id="cb45-458"><a href="#cb45-458" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Model =</span> <span class="st">&quot;Random Forest&quot;</span>)</span>
+<span id="cb45-459"><a href="#cb45-459" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb45-460"><a href="#cb45-460" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Model, .metric, .estimate) <span class="sc">|&gt;</span></span>
+<span id="cb45-461"><a href="#cb45-461" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> .metric, <span class="at">values_from =</span> .estimate) <span class="sc">|&gt;</span></span>
+<span id="cb45-462"><a href="#cb45-462" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(roc_auc))</span>
+<span id="cb45-463"><a href="#cb45-463" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-464"><a href="#cb45-464" aria-hidden="true" tabindex="-1"></a>model_comparison <span class="sc">|&gt;</span></span>
+<span id="cb45-465"><a href="#cb45-465" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Held-out test-set model performance&quot;</span>)</span>
+<span id="cb45-466"><a href="#cb45-466" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-467"><a href="#cb45-467" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-470"><a href="#cb45-470" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-471"><a href="#cb45-471" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: test-roc-plot</span></span>
+<span id="cb45-472"><a href="#cb45-472" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-473"><a href="#cb45-473" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(</span>
+<span id="cb45-474"><a href="#cb45-474" aria-hidden="true" tabindex="-1"></a>  <span class="fu">roc_curve</span>(tree_test_pred, <span class="at">truth =</span> y, .pred_yes) <span class="sc">|&gt;</span></span>
+<span id="cb45-475"><a href="#cb45-475" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Model =</span> <span class="st">&quot;Classification Tree&quot;</span>),</span>
+<span id="cb45-476"><a href="#cb45-476" aria-hidden="true" tabindex="-1"></a>  <span class="fu">roc_curve</span>(rf_test_pred, <span class="at">truth =</span> y, .pred_yes) <span class="sc">|&gt;</span></span>
+<span id="cb45-477"><a href="#cb45-477" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Model =</span> <span class="st">&quot;Random Forest&quot;</span>)</span>
+<span id="cb45-478"><a href="#cb45-478" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb45-479"><a href="#cb45-479" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">1</span> <span class="sc">-</span> specificity, <span class="at">y =</span> sensitivity, <span class="at">color =</span> Model)) <span class="sc">+</span></span>
+<span id="cb45-480"><a href="#cb45-480" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_path</span>(<span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb45-481"><a href="#cb45-481" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_abline</span>(<span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>, <span class="at">color =</span> <span class="st">&quot;gray80&quot;</span>) <span class="sc">+</span></span>
+<span id="cb45-482"><a href="#cb45-482" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_equal</span>() <span class="sc">+</span></span>
+<span id="cb45-483"><a href="#cb45-483" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb45-484"><a href="#cb45-484" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">&quot;ROC Curves on the Test Set&quot;</span>,</span>
+<span id="cb45-485"><a href="#cb45-485" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">&quot;False positive rate&quot;</span>,</span>
+<span id="cb45-486"><a href="#cb45-486" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">&quot;True positive rate&quot;</span></span>
+<span id="cb45-487"><a href="#cb45-487" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb45-488"><a href="#cb45-488" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb45-489"><a href="#cb45-489" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-490"><a href="#cb45-490" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-491"><a href="#cb45-491" aria-hidden="true" tabindex="-1"></a><span class="fu">### Select the overall best model</span></span>
 <span id="cb45-492"><a href="#cb45-492" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-493"><a href="#cb45-493" aria-hidden="true" tabindex="-1"></a><span class="fu">### Select the overall best model</span></span>
-<span id="cb45-494"><a href="#cb45-494" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-497"><a href="#cb45-497" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-498"><a href="#cb45-498" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: select-overall-model</span></span>
-<span id="cb45-499"><a href="#cb45-499" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-500"><a href="#cb45-500" aria-hidden="true" tabindex="-1"></a><span class="co"># In an exact tie, prefer the simpler classification tree</span></span>
-<span id="cb45-501"><a href="#cb45-501" aria-hidden="true" tabindex="-1"></a>best_model_name <span class="ot">&lt;-</span> model_comparison<span class="sc">$</span>Model[<span class="dv">1</span>]</span>
-<span id="cb45-502"><a href="#cb45-502" aria-hidden="true" tabindex="-1"></a>best_model_auc <span class="ot">&lt;-</span> model_comparison<span class="sc">$</span>roc_auc[<span class="dv">1</span>]</span>
-<span id="cb45-503"><a href="#cb45-503" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-504"><a href="#cb45-504" aria-hidden="true" tabindex="-1"></a>best_model_wf <span class="ot">&lt;-</span> <span class="cf">if</span> (best_model_name <span class="sc">==</span> <span class="st">&quot;Random Forest&quot;</span>) {</span>
-<span id="cb45-505"><a href="#cb45-505" aria-hidden="true" tabindex="-1"></a>  final_rf_wf</span>
-<span id="cb45-506"><a href="#cb45-506" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb45-507"><a href="#cb45-507" aria-hidden="true" tabindex="-1"></a>  final_tree_wf</span>
-<span id="cb45-508"><a href="#cb45-508" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb45-509"><a href="#cb45-509" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-495"><a href="#cb45-495" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-496"><a href="#cb45-496" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: select-overall-model</span></span>
+<span id="cb45-497"><a href="#cb45-497" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-498"><a href="#cb45-498" aria-hidden="true" tabindex="-1"></a><span class="co"># In an exact tie, prefer the simpler classification tree</span></span>
+<span id="cb45-499"><a href="#cb45-499" aria-hidden="true" tabindex="-1"></a>best_model_name <span class="ot">&lt;-</span> model_comparison<span class="sc">$</span>Model[<span class="dv">1</span>]</span>
+<span id="cb45-500"><a href="#cb45-500" aria-hidden="true" tabindex="-1"></a>best_model_auc <span class="ot">&lt;-</span> model_comparison<span class="sc">$</span>roc_auc[<span class="dv">1</span>]</span>
+<span id="cb45-501"><a href="#cb45-501" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-502"><a href="#cb45-502" aria-hidden="true" tabindex="-1"></a>best_model_wf <span class="ot">&lt;-</span> <span class="cf">if</span> (best_model_name <span class="sc">==</span> <span class="st">&quot;Random Forest&quot;</span>) {</span>
+<span id="cb45-503"><a href="#cb45-503" aria-hidden="true" tabindex="-1"></a>  final_rf_wf</span>
+<span id="cb45-504"><a href="#cb45-504" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb45-505"><a href="#cb45-505" aria-hidden="true" tabindex="-1"></a>  final_tree_wf</span>
+<span id="cb45-506"><a href="#cb45-506" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb45-507"><a href="#cb45-507" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-508"><a href="#cb45-508" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-509"><a href="#cb45-509" aria-hidden="true" tabindex="-1"></a>The selected model is the **`r best_model_name`** with a test-set ROC AUC of <span class="in">`r round(best_model_auc, 4)`</span>. This model is selected based on the highest test-set ROC AUC with ties resolved in favor of the simpler classification tree.</span>
 <span id="cb45-510"><a href="#cb45-510" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-511"><a href="#cb45-511" aria-hidden="true" tabindex="-1"></a>The selected model is the **`r best_model_name`**, with a test-set ROC AUC of <span class="in">`r round(best_model_auc, 4)`</span>. This model is selected based on the highest test-set ROC AUC with ties resolved in favor of the simpler classification tree.</span>
+<span id="cb45-511"><a href="#cb45-511" aria-hidden="true" tabindex="-1"></a><span class="fu">## Final Model</span></span>
 <span id="cb45-512"><a href="#cb45-512" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-513"><a href="#cb45-513" aria-hidden="true" tabindex="-1"></a><span class="fu">## Final Model</span></span>
+<span id="cb45-513"><a href="#cb45-513" aria-hidden="true" tabindex="-1"></a>After selecting the best model, we refit its finalized workflow to the entire dataset using the previously selected tuning parameters. No additional tuning is performed. The saved workflow includes the fitted preprocessing recipe and model.</span>
 <span id="cb45-514"><a href="#cb45-514" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-515"><a href="#cb45-515" aria-hidden="true" tabindex="-1"></a>After selecting the best model, we refit its finalized workflow to the entire dataset using the previously selected tuning parameters. No additional tuning is performed. The saved workflow includes the fitted preprocessing recipe and model.</span>
-<span id="cb45-516"><a href="#cb45-516" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-519"><a href="#cb45-519" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb45-520"><a href="#cb45-520" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fit-final-model</span></span>
+<span id="cb45-517"><a href="#cb45-517" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb45-518"><a href="#cb45-518" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fit-final-model</span></span>
+<span id="cb45-519"><a href="#cb45-519" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-520"><a href="#cb45-520" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
 <span id="cb45-521"><a href="#cb45-521" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-522"><a href="#cb45-522" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">558</span>)</span>
+<span id="cb45-522"><a href="#cb45-522" aria-hidden="true" tabindex="-1"></a>final_model <span class="ot">&lt;-</span> <span class="fu">fit</span>(best_model_wf, <span class="at">data =</span> bank_data)</span>
 <span id="cb45-523"><a href="#cb45-523" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-524"><a href="#cb45-524" aria-hidden="true" tabindex="-1"></a>final_model <span class="ot">&lt;-</span> <span class="fu">fit</span>(best_model_wf, <span class="at">data =</span> bank_data)</span>
-<span id="cb45-525"><a href="#cb45-525" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-526"><a href="#cb45-526" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_model, <span class="st">&quot;final_model.rds&quot;</span>)</span>
-<span id="cb45-527"><a href="#cb45-527" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-524"><a href="#cb45-524" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_model, <span class="st">&quot;final_model.rds&quot;</span>)</span>
+<span id="cb45-525"><a href="#cb45-525" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb45-526"><a href="#cb45-526" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-527"><a href="#cb45-527" aria-hidden="true" tabindex="-1"></a>The saved model will be used by the prediction API. The test-set metrics above evaluate the models fitted to the training set rather than the final model fitted to the entire dataset.</span>
 <span id="cb45-528"><a href="#cb45-528" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-529"><a href="#cb45-529" aria-hidden="true" tabindex="-1"></a>The saved model will be used by the prediction API. The test-set metrics above describe the training-set-fitted models used for selection, not an independent evaluation of the final full-data fit.</span>
+<span id="cb45-529"><a href="#cb45-529" aria-hidden="true" tabindex="-1"></a><span class="fu">## Conclusion</span></span>
 <span id="cb45-530"><a href="#cb45-530" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-531"><a href="#cb45-531" aria-hidden="true" tabindex="-1"></a><span class="fu">## Conclusion</span></span>
+<span id="cb45-531"><a href="#cb45-531" aria-hidden="true" tabindex="-1"></a>The classification tree and random forest were tuned using five-fold cross-validation and compared on a held-out test set. The classification tree achieved a test-set ROC AUC of <span class="in">`r round(model_comparison$roc_auc[model_comparison$Model == &quot;Classification Tree&quot;], 4)`</span>, while the random forest achieved <span class="in">`r round(model_comparison$roc_auc[model_comparison$Model == &quot;Random Forest&quot;], 4)`</span>. Based on ROC AUC, the selected model is the <span class="in">`r best_model_name`</span>.</span>
 <span id="cb45-532"><a href="#cb45-532" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-533"><a href="#cb45-533" aria-hidden="true" tabindex="-1"></a>The classification tree and random forest were tuned using five-fold cross-validation and compared on a held-out test set. The classification tree achieved a test-set ROC AUC of <span class="in">`r round(model_comparison$roc_auc[model_comparison$Model == &quot;Classification Tree&quot;], 4)`</span>, while the random forest achieved <span class="in">`r round(model_comparison$roc_auc[model_comparison$Model == &quot;Random Forest&quot;], 4)`</span>. Based on ROC AUC, the selected model is the <span class="in">`r best_model_name`</span>.</span>
+<span id="cb45-533"><a href="#cb45-533" aria-hidden="true" tabindex="-1"></a>The higher ROC AUC of the random forest suggests that combining multiple trees improves discrimination between subscribers and non-subscribers compared to a single classification tree. The random forest achieved a sensitivity of <span class="in">`r round(model_comparison$sens[model_comparison$Model == &quot;Random Forest&quot;], 4)`</span> and a specificity of <span class="in">`r round(model_comparison$spec[model_comparison$Model == &quot;Random Forest&quot;], 4)`</span>. A high ROC AUC does not necessarily mean that the model correctly identifies most subscribers at the default classification threshold. </span>
 <span id="cb45-534"><a href="#cb45-534" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-535"><a href="#cb45-535" aria-hidden="true" tabindex="-1"></a>The higher ROC AUC of the random forest suggests that combining multiple trees improves discrimination between subscribers and non-subscribers compared with a single classification tree. The random forest achieved sensitivity of <span class="in">`r round(model_comparison$sens[model_comparison$Model == &quot;Random Forest&quot;], 4)`</span> and specificity of <span class="in">`r round(model_comparison$spec[model_comparison$Model == &quot;Random Forest&quot;], 4)`</span>. Sensitivity and specificity should be considered alongside ROC AUC because strong discrimination does not necessarily imply that a model identifies most subscribers at its default classification threshold. Future work could investigate alternative thresholds based on the costs of false positives and false negatives.</span>
+<span id="cb45-535"><a href="#cb45-535" aria-hidden="true" tabindex="-1"></a>An important limitation is that <span class="in">`duration`</span> is only known after the marketing contact. The fitted model is intended for prediction when call duration is available rather than for identifying potential subscribers before a call. A pre-contact model would need to exclude this variable and be evaluated separately.</span>
 <span id="cb45-536"><a href="#cb45-536" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-537"><a href="#cb45-537" aria-hidden="true" tabindex="-1"></a>An important limitation is that <span class="in">`duration`</span> is only known after the marketing contact. The fitted model is intended for prediction when call duration is available rather than for identifying potential subscribers before a call. A pre-contact model would need to exclude this variable and be evaluated separately.</span>
-<span id="cb45-538"><a href="#cb45-538" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-539"><a href="#cb45-539" aria-hidden="true" tabindex="-1"></a>The selected workflow was refitted using the entire dataset and saved for deployment through a prediction API.</span>
+<span id="cb45-537"><a href="#cb45-537" aria-hidden="true" tabindex="-1"></a>The selected workflow was refitted using the entire dataset and saved for deployment through a prediction API.</span>
 </code></pre></div><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
