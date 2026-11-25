@@ -28,6 +28,8 @@ final_model <- readRDS("final_model.rds")
 #* @param previous Number of contacts before the current campaign
 #* @param poutcome Outcome of previous campaign
 #* @get /pred
+
+# Using default values from the report:
 function(age = 40.9, job = "blue-collar", marital = "married",
          education = "secondary", default = "no", balance = 1362,
          housing = "yes", loan = "no", contact = "cellular",
